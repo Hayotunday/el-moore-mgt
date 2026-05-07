@@ -1,16 +1,12 @@
 "use client";
 
-import { useState } from "react";
 import RoleGuard from "@/components/role-guard";
 import StatCard from "@/components/dashboard-stat-card";
 import { recentTransactions, commissionDisbursements } from "@/lib/dashboardMockData";
-import { DollarSign, TrendingUp, Download } from "lucide-react";
+import { DollarSign, TrendingUp, CreditCard } from "lucide-react";
+import Link from "next/link";
 
 export default function FinanceDashboard() {
-  const [activeTab, setActiveTab] = useState<"transactions" | "disbursements">(
-    "transactions"
-  );
-
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat("en-NG", {
       style: "currency",
@@ -69,195 +65,34 @@ export default function FinanceDashboard() {
           />
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab("transactions")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "transactions"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border text-muted-foreground hover:text-foreground"
-            }`}
+        {/* Quick Links to Management Sections */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Link
+            href="/finance/transactions"
+            className="rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group"
           >
-            Recent Transactions
-          </button>
-          <button
-            onClick={() => setActiveTab("disbursements")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "disbursements"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border text-muted-foreground hover:text-foreground"
-            }`}
+            <DollarSign className="h-8 w-8 text-primary mb-3" />
+            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              Recent Transactions
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              View all financial transactions
+            </p>
+          </Link>
+
+          <Link
+            href="/finance/commissions"
+            className="rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group"
           >
-            Commission Disbursements
-          </button>
+            <CreditCard className="h-8 w-8 text-primary mb-3" />
+            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              Commission Payouts
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Manage and disburse commissions
+            </p>
+          </Link>
         </div>
-
-        {/* Recent Transactions */}
-        {activeTab === "transactions" && (
-          <div className="rounded-lg border border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Type
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Agent / Party
-                    </th>
-                    <th className="px-6 py-4 text-right text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Amount
-                    </th>
-                    <th className="px-6 py-4 text-center text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Status
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Reference
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {recentTransactions.map((txn, idx) => (
-                    <tr
-                      key={txn.id}
-                      className={`border-b border-border transition-colors hover:bg-muted/30 ${
-                        idx % 2 === 0 ? "bg-background" : "bg-surface"
-                      }`}
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-foreground">
-                        {txn.date}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {txn.type}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {txn.agent}
-                      </td>
-                      <td
-                        className={`px-6 py-4 text-sm text-right font-semibold ${
-                          txn.amount > 0
-                            ? "text-green-600"
-                            : "text-red-600"
-                        }`}
-                      >
-                        {formatCurrency(txn.amount)}
-                      </td>
-                      <td className="px-6 py-4 text-center">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            txn.status === "Completed"
-                              ? "bg-green-100 text-green-700"
-                              : txn.status === "Paid"
-                                ? "bg-green-100 text-green-700"
-                                : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {txn.status}
-                        </span>
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground font-mono">
-                        {txn.reference}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Commission Disbursements */}
-        {activeTab === "disbursements" && (
-          <div className="space-y-4">
-            {commissionDisbursements.map((disb) => (
-              <div
-                key={disb.id}
-                className="rounded-lg border border-border bg-background p-6 space-y-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        {disb.agent}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          disb.status === "Paid"
-                            ? "bg-green-100 text-green-700"
-                            : disb.status === "Pending"
-                              ? "bg-red-100 text-red-700"
-                              : "bg-yellow-100 text-yellow-700"
-                        }`}
-                      >
-                        {disb.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Period: <span className="font-medium">{disb.period}</span>
-                    </p>
-                  </div>
-                  <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                    <Download className="h-5 w-5 text-muted-foreground" />
-                  </button>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-4 border-t border-border">
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-2">
-                      Total Earned
-                    </p>
-                    <p className="text-2xl font-bold text-foreground">
-                      {formatCurrency(disb.totalEarned)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-2">
-                      Disbursed
-                    </p>
-                    <p className="text-2xl font-bold text-gold">
-                      {formatCurrency(disb.disbursed)}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-xs text-muted-foreground uppercase tracking-wider font-semibold mb-2">
-                      Payment Date
-                    </p>
-                    <p className="text-lg font-semibold text-foreground">
-                      {disb.paymentDate}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex gap-2 justify-end pt-4">
-                  {disb.status === "Pending" && (
-                    <>
-                      <button className="px-4 py-2 rounded-lg border border-border text-foreground hover:bg-muted transition-colors text-sm font-medium">
-                        Reject
-                      </button>
-                      <button className="px-4 py-2 rounded-lg bg-primary text-primary-foreground hover:bg-primary/90 transition-colors text-sm font-medium">
-                        Approve & Process
-                      </button>
-                    </>
-                  )}
-                  {disb.status === "Processing" && (
-                    <button className="px-4 py-2 rounded-lg bg-yellow-600 text-white hover:bg-yellow-700 transition-colors text-sm font-medium">
-                      Processing...
-                    </button>
-                  )}
-                  {disb.status === "Paid" && (
-                    <button className="px-4 py-2 rounded-lg bg-green-600 text-white hover:bg-green-700 transition-colors text-sm font-medium">
-                      View Receipt
-                    </button>
-                  )}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </RoleGuard>
   );

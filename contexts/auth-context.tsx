@@ -22,23 +22,47 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
-export function AuthProvider({ children }: { children: ReactNode }) {
-  const [user, setUser] = useState<User | null>({
-    id: "user-001",
-    name: "John Doe",
-    email: "john.doe@elmoore.com",
+// Mock profiles for different roles
+const mockProfiles: Record<UserRole, User> = {
+  admin: {
+    id: "admin-001",
+    name: "Chioma Okafor",
+    email: "chioma.okafor@elmoore.com",
     role: "admin",
-    joinDate: "2024-01-15",
+    joinDate: "2023-06-10",
     avatar: "/assets/avatar.jpg",
-  });
+  },
+  hr_staff: {
+    id: "hr-001",
+    name: "Emeka Udoka",
+    email: "emeka.udoka@elmoore.com",
+    role: "hr_staff",
+    joinDate: "2023-08-22",
+    avatar: "/assets/avatar.jpg",
+  },
+  finance: {
+    id: "fin-001",
+    name: "Amara Mensah",
+    email: "amara.mensah@elmoore.com",
+    role: "finance",
+    joinDate: "2023-09-05",
+    avatar: "/assets/avatar.jpg",
+  },
+  marketer: {
+    id: "mark-001",
+    name: "Kwame Boateng",
+    email: "kwame.boateng@elmoore.com",
+    role: "marketer",
+    joinDate: "2024-02-14",
+    avatar: "/assets/avatar.jpg",
+  },
+};
+
+export function AuthProvider({ children }: { children: ReactNode }) {
+  const [user, setUser] = useState<User | null>(mockProfiles.admin);
 
   const switchRole = (role: UserRole) => {
-    if (user) {
-      setUser({
-        ...user,
-        role,
-      });
-    }
+    setUser(mockProfiles[role]);
   };
 
   const value: AuthContextType = {

@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import RoleGuard from "@/components/role-guard";
 import StatCard from "@/components/dashboard-stat-card";
 import {
@@ -9,57 +8,17 @@ import {
   disciplinaryLog,
   taskRoster,
 } from "@/lib/dashboardMockData";
-import { Clock, AlertCircle, CheckCircle2, Edit, Trash2 } from "lucide-react";
+import { Clock, AlertCircle, CheckCircle2 } from "lucide-react";
+import Link from "next/link";
 
 export default function HRDashboard() {
-  const [activeTab, setActiveTab] = useState<
-    "attendance" | "discipline" | "tasks"
-  >("attendance");
-  const [clockInOpen, setClockInOpen] = useState(false);
-
   const onTimeCount = attendanceLog.filter(
     (log) => log.status === "On Time"
   ).length;
   const lateCount = attendanceLog.filter((log) => log.status === "Late").length;
-
-  const getSeverityColor = (severity: string) => {
-    switch (severity) {
-      case "High":
-        return "bg-red-100 text-red-700";
-      case "Medium":
-        return "bg-yellow-100 text-yellow-700";
-      case "Low":
-        return "bg-blue-100 text-blue-700";
-      default:
-        return "bg-gray-100 text-gray-700";
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "Resolved":
-        return "bg-green-100 text-green-700";
-      case "Pending":
-        return "bg-yellow-100 text-yellow-700";
-      case "Closed":
-        return "bg-gray-100 text-gray-700";
-      default:
-        return "bg-blue-100 text-blue-700";
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case "High":
-        return "text-red-600 font-semibold";
-      case "Medium":
-        return "text-yellow-600";
-      case "Low":
-        return "text-gray-600";
-      default:
-        return "text-gray-600";
-    }
-  };
+  const pendingDiscipline = disciplinaryLog.filter(
+    (log) => log.status === "Pending"
+  ).length;
 
   return (
     <RoleGuard allowedRoles={["hr_staff"]}>
@@ -158,200 +117,47 @@ export default function HRDashboard() {
           )}
         </div>
 
-        {/* Tab Navigation */}
-        <div className="flex gap-2">
-          <button
-            onClick={() => setActiveTab("attendance")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "attendance"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border text-muted-foreground hover:text-foreground"
-            }`}
+        {/* Quick Links to Management Sections */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Link
+            href="/hr/attendance"
+            className="rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group"
           >
-            Attendance Log
-          </button>
-          <button
-            onClick={() => setActiveTab("discipline")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "discipline"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border text-muted-foreground hover:text-foreground"
-            }`}
+            <Clock className="h-8 w-8 text-primary mb-3" />
+            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              Attendance Log
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              View and manage staff clock records
+            </p>
+          </Link>
+
+          <Link
+            href="/hr/discipline"
+            className="rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group"
           >
-            Disciplinary Log
-          </button>
-          <button
-            onClick={() => setActiveTab("tasks")}
-            className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-              activeTab === "tasks"
-                ? "bg-primary text-primary-foreground"
-                : "border border-border text-muted-foreground hover:text-foreground"
-            }`}
+            <AlertCircle className="h-8 w-8 text-primary mb-3" />
+            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              Disciplinary Log
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Track and resolve staff issues
+            </p>
+          </Link>
+
+          <Link
+            href="/hr/tasks"
+            className="rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all group"
           >
-            Task Roster
-          </button>
+            <CheckCircle2 className="h-8 w-8 text-primary mb-3" />
+            <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
+              Task Roster
+            </h3>
+            <p className="text-sm text-muted-foreground mt-1">
+              Assign and track team tasks
+            </p>
+          </Link>
         </div>
-
-        {/* Attendance Log */}
-        {activeTab === "attendance" && (
-          <div className="rounded-lg border border-border overflow-hidden">
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead>
-                  <tr className="border-b border-border bg-muted/50">
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Name
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Date
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Clock In
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Clock Out
-                    </th>
-                    <th className="px-6 py-4 text-left text-xs font-semibold text-foreground uppercase tracking-wider">
-                      Status
-                    </th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {attendanceLog.map((log, idx) => (
-                    <tr
-                      key={log.id}
-                      className={`border-b border-border transition-colors hover:bg-muted/30 ${
-                        idx % 2 === 0 ? "bg-background" : "bg-surface"
-                      }`}
-                    >
-                      <td className="px-6 py-4 text-sm font-medium text-foreground">
-                        {log.name}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-muted-foreground">
-                        {log.date}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-foreground">
-                        {log.clockIn}
-                      </td>
-                      <td className="px-6 py-4 text-sm text-foreground">
-                        {log.clockOut}
-                      </td>
-                      <td className="px-6 py-4 text-sm">
-                        <span
-                          className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                            log.status === "On Time"
-                              ? "bg-green-100 text-green-700"
-                              : "bg-yellow-100 text-yellow-700"
-                          }`}
-                        >
-                          {log.status}
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        )}
-
-        {/* Disciplinary Log */}
-        {activeTab === "discipline" && (
-          <div className="space-y-4">
-            {disciplinaryLog.map((log) => (
-              <div
-                key={log.id}
-                className="rounded-lg border border-border bg-background p-6 space-y-4"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        {log.staffName}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getSeverityColor(log.severity)}`}
-                      >
-                        {log.severity}
-                      </span>
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(log.status)}`}
-                      >
-                        {log.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      {log.date} • {log.issue}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                      <Edit className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                    <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </button>
-                  </div>
-                </div>
-                <p className="text-sm text-muted-foreground border-t border-border pt-4">
-                  {log.notes}
-                </p>
-              </div>
-            ))}
-          </div>
-        )}
-
-        {/* Task Roster */}
-        {activeTab === "tasks" && (
-          <div className="space-y-4">
-            {taskRoster.map((task) => (
-              <div
-                key={task.id}
-                className="rounded-lg border border-border bg-background p-6"
-              >
-                <div className="flex items-start justify-between">
-                  <div className="space-y-2 flex-1">
-                    <div className="flex items-center gap-3">
-                      <h3 className="text-lg font-semibold text-foreground">
-                        {task.title}
-                      </h3>
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${getPriorityColor(task.priority)} bg-opacity-10`}
-                      >
-                        {task.priority}
-                      </span>
-                      <span
-                        className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${
-                          task.status === "In Progress"
-                            ? "bg-blue-100 text-blue-700"
-                            : task.status === "Pending"
-                              ? "bg-yellow-100 text-yellow-700"
-                              : "bg-gray-100 text-gray-700"
-                        }`}
-                      >
-                        {task.status}
-                      </span>
-                    </div>
-                    <p className="text-sm text-muted-foreground">
-                      Assigned to: <span className="font-medium">{task.assignee}</span>
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Due: {task.dueDate}
-                    </p>
-                  </div>
-                  <div className="flex gap-2">
-                    <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                      <Edit className="h-4 w-4 text-muted-foreground" />
-                    </button>
-                    <button className="p-2 rounded-lg hover:bg-muted transition-colors">
-                      <Trash2 className="h-4 w-4 text-destructive" />
-                    </button>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
       </div>
     </RoleGuard>
   );
