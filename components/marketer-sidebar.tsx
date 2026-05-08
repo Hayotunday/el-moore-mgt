@@ -41,6 +41,9 @@ export default function MarketerSidebar() {
     setMounted(true);
   }, []);
 
+  // Do not render the sidebar on the registration route
+  if (pathname === "/marketer/register") return null;
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -124,7 +127,7 @@ export default function MarketerSidebar() {
               {marketerSections.map((section) => {
                 const isActive =
                   pathname === section.path ||
-                  pathname.startsWith(section.path + "/");
+                  (pathname?.startsWith(section.path + "/") ?? false);
                 return (
                   <Link
                     key={section.path}
