@@ -2,9 +2,10 @@ import type { Metadata } from "next";
 import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import Footer from "@/components/footer";
 import Navbar from "@/components/navbar";
+import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
+import { AuthProvider } from "@/contexts/auth-context";
 
 const axiforma = localFont({
   src: [
@@ -35,16 +36,13 @@ const axiforma = localFont({
 export const metadata: Metadata = {
   title: "El-Moore",
   description: "Trusted real estate partner",
-  icons: {
-    icon: "../public/assets/el-moore.png",
-  },
 };
 
 export default function RootLayout({
   children,
-}: Readonly<{
+}: {
   children: React.ReactNode;
-}>) {
+}) {
   return (
     <html
       lang="en"
@@ -52,12 +50,14 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
-        <Navbar />
-        <main className="" style={{ backgroundColor: "#fcfbf8" }}>
-          {children}
-        </main>
-        <Footer />
-        <Toaster />
+        <AuthProvider>
+          <Navbar />
+          <main className="flex-1" style={{ backgroundColor: "#fcfbf8" }}>
+            {children}
+          </main>
+          <Footer />
+          <Toaster />
+        </AuthProvider>
       </body>
     </html>
   );

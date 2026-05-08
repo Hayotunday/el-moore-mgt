@@ -33,17 +33,24 @@ export default function StatCard({
     <div
       className={`rounded-lg border ${borderClass} ${bgColorClass} p-6 space-y-2`}
     >
-      <div className="flex items-start justify-between">
-        <div>
-          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold">
+      <div className="flex items-start justify-between gap-4">
+        <div className="min-w-0 flex-1">
+          <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold truncate">
             {label}
           </p>
-          <p className="text-3xl font-bold text-foreground mt-2">{value}</p>
+          <p
+            className="text-2xl sm:text-3xl font-bold text-foreground mt-2 truncate"
+            title={value.toString()}
+          >
+            {value}
+          </p>
           {sublabel && (
-            <p className="text-xs text-muted-foreground mt-1">{sublabel}</p>
+            <p className="text-xs text-muted-foreground mt-1 truncate">
+              {sublabel}
+            </p>
           )}
         </div>
-        {icon && <div className="text-gold">{icon}</div>}
+        {icon && <div className="text-gold shrink-0">{icon}</div>}
       </div>
     </div>
   );
