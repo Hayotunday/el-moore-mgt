@@ -52,7 +52,7 @@ export default function RootLayout({
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
         <AuthProvider>
           <Navbar />
-          <main className="flex-1" style={{ backgroundColor: "#fcfbf8" }}>
+          <main className="flex-1">
             {children}
           </main>
           <Footer />

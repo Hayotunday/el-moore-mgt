@@ -122,7 +122,7 @@ export default function Listings() {
                     onClick={() => toggleType(type)}
                     className={`block w-full text-left px-3 py-2 rounded text-sm transition-colors ${
                       selectedTypes.includes(type)
-                        ? "bg-muted font-medium text-foreground"
+                        ? "bg-gold/20 font-medium text-gold"
                         : "text-muted-foreground hover:text-foreground"
                     }`}
                   >
@@ -169,7 +169,7 @@ export default function Listings() {
           )}
 
           <ScrollReveal className="text-center mt-12">
-            <button className="inline-flex items-center gap-2 border border-foreground rounded-md px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-primary hover:text-primary-foreground transition-colors active:scale-[0.97]">
+            <button className="inline-flex items-center gap-2 border border-foreground rounded-md px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-gold hover:text-secondary-foreground hover:border-gold transition-colors active:scale-[0.97]">
               Discover More Assets <ArrowRight className="h-4 w-4" />
             </button>
           </ScrollReveal>

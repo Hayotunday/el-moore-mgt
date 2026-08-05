@@ -110,7 +110,7 @@ function CalculatorContent() {
             </div>
           </div>
 
-          <div className="border-l-4 border-gold p-6 flex-1 mt-5 bg-gray-200">
+          <div className="border-l-4 border-gold p-6 flex-1 mt-5 bg-card text-card-foreground">
             <p className="italic">
               "Real estate is the only asset class where time literally
               manufacture wealth"
@@ -120,10 +120,10 @@ function CalculatorContent() {
 
         {/* Right: Results */}
         <ScrollReveal direction="right">
-          <div className="bg-primary rounded-xl p-8 text-primary-foreground">
+          <div className="bg-card rounded-xl p-8 text-card-foreground">
             <div className="flex items-start justify-between mb-8">
               <div>
-                <p className="text-[10px] uppercase tracking-widest text-secondary font-semibold mb-1">
+                <p className="text-[10px] uppercase tracking-widest text-gold font-semibold mb-1">
                   Estimated ROI
                 </p>
                 <motion.p
@@ -139,7 +139,7 @@ function CalculatorContent() {
                 </p>
               </div>
               <div className="text-right">
-                <p className="text-[10px] uppercase tracking-widest text-secondary font-semibold mb-1">
+                <p className="text-[10px] uppercase tracking-widest text-gold font-semibold mb-1">
                   Total Projected Profit
                 </p>
                 <motion.p
@@ -180,7 +180,7 @@ function CalculatorContent() {
                         return value;
                       }}
                       contentStyle={{
-                        background: "hsl(156,33%,8%)",
+                        background: "hsl(156,33%,12%)",
                         border: "none",
                         borderRadius: 8,
                         color: "#fff",
@@ -198,16 +198,16 @@ function CalculatorContent() {
 
             <div className="flex gap-3">
               <button
-                className="flex-1 flex items-center justify-center gap-2 bg-primary-foreground/10 
-                            border border-primary-foreground/20 rounded-md py-3 text-sm font-medium 
-                            hover:bg-primary-foreground/20 transition-colors active:scale-[0.97]"
+                className="flex-1 flex items-center justify-center gap-2 bg-background/10 
+                            border border-background/20 rounded-md py-3 text-sm font-medium 
+                            hover:bg-background/20 transition-colors active:scale-[0.97]"
               >
                 <TrendingUp className="h-4 w-4" /> Find Properties with this ROI
               </button>
               <button
-                className="flex items-center gap-2 bg-primary-foreground/10 border 
-                            border-primary-foreground/20 rounded-md px-4 py-3 text-sm 
-                            font-medium hover:bg-primary-foreground/20 transition-colors 
+                className="flex items-center gap-2 bg-background/10 border 
+                            border-background/20 rounded-md px-4 py-3 text-sm 
+                            font-medium hover:bg-background/20 transition-colors 
                             active:scale-[0.97]"
               >
                 <Download className="h-4 w-4" /> Download Full Analysis

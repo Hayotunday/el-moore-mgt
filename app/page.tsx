@@ -46,7 +46,7 @@ export default function Lobby() {
           </motion.h1>
 
           <motion.div
-            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-0 bg-primary-foreground rounded-lg overflow-hidden shadow-xl max-w-2xl"
+            className="flex flex-col sm:flex-row items-stretch sm:items-center gap-0 bg-card rounded-lg overflow-hidden shadow-xl max-w-2xl"
             initial={{ opacity: 0, y: 16 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.6, delay: 0.3, ease: [0.16, 1, 0.3, 1] }}
@@ -62,7 +62,7 @@ export default function Lobby() {
                   placeholder="e.g., Gwarinpa, Abuja"
                   value={location}
                   onChange={(e) => setLocation(e.target.value)}
-                  className="bg-transparent text-sm text-foreground placeholder:text-muted-foreground focus:outline-none w-full"
+                  className="bg-transparent text-sm text-card-foreground placeholder:text-muted-foreground focus:outline-none w-full"
                 />
               </div>
             </div>
@@ -143,8 +143,8 @@ export default function Lobby() {
               </div>
             </ScrollReveal>
             <ScrollReveal delay={0.2}>
-              <div className="rounded-lg bg-primary p-6 text-primary-foreground space-y-3">
-                <p className="text-[10px] uppercase tracking-widest text-secondary font-semibold">
+              <div className="rounded-lg bg-gold p-6 text-secondary-foreground space-y-3">
+                <p className="text-[10px] uppercase tracking-widest text-secondary-foreground/70 font-semibold">
                   Calculated Growth
                 </p>
                 <h3 className="text-lg font-bold">ROI Forecasting Tool</h3>
@@ -154,7 +154,7 @@ export default function Lobby() {
                 </p>
                 <Link
                   href="/calculator"
-                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-primary-foreground/10 border border-primary-foreground/20 px-4 py-2 rounded hover:bg-primary-foreground/20 transition-colors"
+                  className="inline-flex items-center gap-2 text-xs font-bold uppercase tracking-wider bg-background/10 border border-background/20 px-4 py-2 rounded hover:bg-background/20 transition-colors"
                 >
                   Calculate Now
                 </Link>
@@ -165,7 +165,7 @@ export default function Lobby() {
       </section>
 
       {/* Academy Teaser */}
-      <section className="bg-cream">
+      <section className="">
         <div className="container py-20">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <ScrollReveal direction="left">
@@ -178,7 +178,7 @@ export default function Lobby() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <div className="rounded-lg bg-primary p-4 text-primary-foreground">
+                  <div className="rounded-lg bg-card p-4 text-card-foreground">
                     <p className="text-xs font-bold">Legal Masterclass</p>
                     <p className="text-xs opacity-70 mt-1">
                       Understanding Land Use Act implications for HNWIs.
@@ -233,7 +233,7 @@ export default function Lobby() {
               </div>
               <Link
                 href="/blog"
-                className="inline-flex items-center gap-2 border border-foreground rounded-md px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-primary hover:text-primary-foreground transition-colors active:scale-[0.97]"
+                className="inline-flex items-center gap-2 border border-foreground rounded-md px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-gold hover:text-secondary-foreground transition-colors active:scale-[0.97]"
               >
                 Enter the Academy
               </Link>

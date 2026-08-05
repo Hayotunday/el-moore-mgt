@@ -105,7 +105,7 @@ export default function AboutUs() {
             <ScrollReveal key={member.name} delay={i * 0.08}>
               <div className="group">
                 <div className="aspect-square rounded-lg bg-muted mb-4 overflow-hidden flex items-center justify-center">
-                  <div className="w-20 h-20 rounded-full bg-primary text-primary-foreground flex items-center justify-center text-2xl font-bold">
+                  <div className="w-20 h-20 rounded-full bg-gold text-secondary-foreground flex items-center justify-center text-2xl font-bold">
                     {member.name
                       .split(" ")
                       .map((n) => n[0])
@@ -154,13 +154,13 @@ export default function AboutUs() {
       </section>
 
       {/* CTA */}
-      <section className="bg-primary text-primary-foreground">
+      <section className="bg-card text-card-foreground">
         <div className="container py-20 text-center">
           <ScrollReveal>
             <h2 className="text-3xl font-bold mb-4">
               Experience Personal Concierge Investment
             </h2>
-            <p className="text-primary-foreground/80 mb-8 max-w-md mx-auto">
+            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
               Every story at El-Moore begins with a conversation. Let us curate
               your next high-yield acquisition with the discretion you deserve.
             </p>

@@ -13,7 +13,7 @@ export default function Blog() {
       {/* Featured Insight */}
       <section className="container py-12">
         <ScrollReveal>
-          <div className="grid md:grid-cols-2 gap-8 items-center bg-cream rounded-xl overflow-hidden">
+          <div className="grid md:grid-cols-2 gap-8 items-center bg-card text-card-foreground rounded-xl overflow-hidden">
             <div className="relative aspect-4/3">
               <span
                 className="absolute top-4 left-4 z-10 bg-gold text-secondary-foreground px-3 py-1 
@@ -41,7 +41,7 @@ export default function Blog() {
               <div className="flex items-center gap-4 pt-4">
                 <div className="flex items-center gap-2">
                   <div
-                    className="w-8 h-8 rounded-full bg-primary text-primary-foreground 
+                    className="w-8 h-8 rounded-full bg-gold text-secondary-foreground 
                     flex items-center justify-center text-xs font-bold"
                   >
                     EM
@@ -119,7 +119,7 @@ export default function Blog() {
       </section>
 
       {/* Legal Masterclass */}
-      <section className="bg-cream">
+      <section className="">
         <div className="container py-16">
           <ScrollReveal>
             <h2 className="text-2xl font-bold italic mb-1">
@@ -131,7 +131,7 @@ export default function Blog() {
           </ScrollReveal>
           <div className="grid md:grid-cols-2 gap-6">
             <ScrollReveal>
-              <div className="flex gap-6 bg-background rounded-lg p-6 border border-border">
+              <div className="flex gap-6 bg-card text-card-foreground rounded-lg p-6 border border-border">
                 <div className="w-24 h-32 rounded bg-muted shrink-0 flex items-center justify-center">
                   <BookOpen className="h-8 w-8 text-muted-foreground" />
                 </div>
@@ -154,7 +154,7 @@ export default function Blog() {
             </ScrollReveal>
             <div className="space-y-4">
               <ScrollReveal delay={0.1}>
-                <div className="bg-background rounded-lg p-5 border border-border flex items-start gap-3">
+                <div className="bg-card text-card-foreground rounded-lg p-5 border border-border flex items-start gap-3">
                   <Scale className="h-5 w-5 text-gold mt-0.5 shrink-0" />
                   <div>
                     <h4 className="font-semibold text-sm">
@@ -171,7 +171,7 @@ export default function Blog() {
                 </div>
               </ScrollReveal>
               <ScrollReveal delay={0.2}>
-                <div className="bg-background rounded-lg p-5 border border-border flex items-start gap-3">
+                <div className="bg-card text-card-foreground rounded-lg p-5 border border-border flex items-start gap-3">
                   <Shield className="h-5 w-5 text-gold mt-0.5 shrink-0" />
                   <div>
                     <h4 className="font-semibold text-sm">
@@ -194,7 +194,7 @@ export default function Blog() {
       {/* Newsletter */}
       <section className="container py-20">
         <ScrollReveal>
-          <div className="bg-cream rounded-xl p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="bg-card text-card-foreground rounded-xl p-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
               <h2 className="text-2xl font-bold italic mb-1">
                 The Curator's Digest

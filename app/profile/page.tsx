@@ -61,7 +61,7 @@ export default function Profile() {
               <p className="text-4xl font-bold tabular-nums">12.8%</p>
               <div className="mt-3 h-1.5 bg-muted rounded-full overflow-hidden">
                 <div
-                  className="h-full bg-primary rounded-full"
+                  className="h-full bg-gold rounded-full"
                   style={{ width: "85%" }}
                 />
               </div>
@@ -113,7 +113,7 @@ export default function Profile() {
           {/* Portfolio */}
           <ScrollReveal>
             <h2 className="text-xl font-bold mb-4">My Portfolio</h2>
-            <div className="rounded-lg bg-primary p-6 text-primary-foreground flex flex-col sm:flex-row gap-6">
+            <div className="rounded-lg bg-card border border-gold/30 p-6 text-card-foreground flex flex-col sm:flex-row gap-6">
               <div className="flex-1 space-y-2">
                 <h3 className="text-lg font-bold text-gold">
                   Eko Atlantic Signature
@@ -133,7 +133,7 @@ export default function Profile() {
                     <p className="text-[10px] uppercase tracking-widest opacity-60">
                       Growth
                     </p>
-                    <p className="text-lg font-bold text-emerald-400">+18.4%</p>
+                    <p className="text-lg font-bold text-emerald-500">+18.4%</p>
                   </div>
                 </div>
               </div>

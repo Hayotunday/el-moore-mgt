@@ -63,7 +63,7 @@ export default function Helpdesk() {
                     placeholder="Johnathan Moore"
                     value={form.name}
                     onChange={(e) => update("name", e.target.value)}
-                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-card text-card-foreground focus:outline-none focus:ring-1 focus:ring-gold"
                   />
                 </div>
                 <div>
@@ -73,7 +73,7 @@ export default function Helpdesk() {
                   <select
                     value={form.interest}
                     onChange={(e) => update("interest", e.target.value)}
-                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background focus:outline-none focus:ring-1 focus:ring-primary"
+                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-card text-card-foreground focus:outline-none focus:ring-1 focus:ring-gold"
                   >
                     <option>Buy-to-Let Assets</option>
                     <option>Buy-to-Sell Assets</option>
@@ -126,7 +126,7 @@ export default function Helpdesk() {
                 loading="lazy"
                 className="absolute inset-0"
               />
-              <div className="absolute bottom-4 left-4 right-4 bg-background/95 backdrop-blur-sm rounded-lg p-4 flex items-center gap-3">
+              <div className="absolute bottom-4 left-4 right-4 bg-card/95 backdrop-blur-sm rounded-lg p-4 flex items-center gap-3">
                 <div className="w-10 h-10 rounded-full bg-gold flex items-center justify-center shrink-0">
                   <MapPin className="h-5 w-5 text-secondary-foreground" />
                 </div>

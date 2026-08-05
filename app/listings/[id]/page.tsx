@@ -51,7 +51,7 @@ export default function PropertyPage() {
   };
 
   return (
-    <div className="min-h-screen p-20">
+    <div className="min-h-screen">
       {/* Hero Section */}
       <div className="relative h-[60vh] w-full bg-muted overflow-hidden">
         <img
@@ -141,7 +141,7 @@ export default function PropertyPage() {
 
           {/* Calculator Link */}
           <ScrollReveal delay={0.2}>
-            <div className="bg-primary/5 border border-primary/10 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
+            <div className="bg-card border border-gold/20 rounded-xl p-8 flex flex-col md:flex-row items-center justify-between gap-6">
               <div>
                 <h3 className="text-xl font-bold mb-2 flex items-center gap-2">
                   <TrendingUp className="h-5 w-5 text-gold" /> Wealth Projection
@@ -153,7 +153,7 @@ export default function PropertyPage() {
               </div>
               <Link
                 href={`/calculator?price=${property.price}`}
-                className="bg-primary text-primary-foreground px-6 py-3 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors whitespace-nowrap flex items-center gap-2 shadow-lg shadow-primary/20 active:scale-[0.97]"
+                className="bg-gold text-secondary-foreground px-6 py-3 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-gold/90 transition-colors whitespace-nowrap flex items-center gap-2 active:scale-[0.97]"
               >
                 <Calculator className="h-4 w-4" /> Calculate Potential
               </Link>
@@ -248,7 +248,7 @@ export default function PropertyPage() {
                     </div>
                   </div>
 
-                  <div className="bg-primary/5 border border-primary/10 rounded-md p-3 flex items-start gap-3 text-xs text-muted-foreground">
+                  <div className="bg-card/50 border border-gold/20 rounded-md p-3 flex items-start gap-3 text-xs text-muted-foreground">
                     <Clock className="h-4 w-4 shrink-0 text-gold mt-0.5" />
                     <div>
                       <span className="font-bold text-foreground block mb-0.5">
@@ -261,7 +261,7 @@ export default function PropertyPage() {
 
                   <button
                     type="submit"
-                    className="w-full bg-primary text-primary-foreground py-3 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-primary/90 transition-colors active:scale-[0.98]"
+                    className="w-full bg-gold text-secondary-foreground py-3 rounded-md text-xs font-bold uppercase tracking-wider hover:bg-gold/90 transition-colors active:scale-[0.98]"
                   >
                     Confirm Appointment
                   </button>
