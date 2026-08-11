@@ -154,13 +154,13 @@ export default function AboutUs() {
       </section>
 
       {/* CTA */}
-      <section className="bg-card text-card-foreground">
+      <section className="bg-gradient-green">
         <div className="container py-20 text-center">
           <ScrollReveal>
-            <h2 className="text-3xl font-bold mb-4">
+            <h2 className="text-3xl font-bold mb-4 text-white">
               Experience Personal Concierge Investment
             </h2>
-            <p className="text-muted-foreground mb-8 max-w-md mx-auto">
+            <p className="text-white/75 mb-8 max-w-md mx-auto">
               Every story at El-Moore begins with a conversation. Let us curate
               your next high-yield acquisition with the discretion you deserve.
             </p>

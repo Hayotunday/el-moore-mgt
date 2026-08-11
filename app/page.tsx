@@ -165,7 +165,7 @@ export default function Lobby() {
       </section>
 
       {/* Academy Teaser */}
-      <section className="">
+      <section className="bg-gradient-green">
         <div className="container py-20">
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <ScrollReveal direction="left">
@@ -178,7 +178,7 @@ export default function Lobby() {
                   />
                 </div>
                 <div className="space-y-3">
-                  <div className="rounded-lg bg-card p-4 text-card-foreground">
+                  <div className="rounded-lg bg-white/10 border border-white/20 p-4 text-white">
                     <p className="text-xs font-bold">Legal Masterclass</p>
                     <p className="text-xs opacity-70 mt-1">
                       Understanding Land Use Act implications for HNWIs.
@@ -195,13 +195,13 @@ export default function Lobby() {
               </div>
             </ScrollReveal>
             <ScrollReveal direction="right">
-              <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold mb-2">
+              <p className="text-[10px] uppercase tracking-widest text-gold font-semibold mb-2">
                 El-Moore Academy
               </p>
-              <h2 className="text-3xl md:text-4xl font-bold text-foreground mb-4 italic">
+              <h2 className="text-3xl md:text-4xl font-bold text-white mb-4 italic">
                 The Investor's Intelligence Bureau
               </h2>
-              <p className="text-muted-foreground mb-8 max-w-md">
+              <p className="text-white/75 mb-8 max-w-md">
                 Knowledge is the bedrock of sustainable wealth. Our academy
                 provides curated insights, legal frameworks, and market
                 forecasts that the standard property portals simply don't have
@@ -211,10 +211,10 @@ export default function Lobby() {
                 <div className="flex items-start gap-3">
                   <BookOpen className="h-5 w-5 text-gold mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-sm">
-                      Strategic Whitepapers
+                    <h4 className="font-semibold text-sm text-white">
+                       Strategic Whitepapers
                     </h4>
-                    <p className="text-sm text-muted-foreground">
+                    <p className="text-sm text-white/70">
                       Deep-dive into regional development plans and
                       infrastructure pivots.
                     </p>
@@ -223,8 +223,8 @@ export default function Lobby() {
                 <div className="flex items-start gap-3">
                   <TrendingUp className="h-5 w-5 text-gold mt-0.5" />
                   <div>
-                    <h4 className="font-semibold text-sm">Private Webinars</h4>
-                    <p className="text-sm text-muted-foreground">
+                    <h4 className="font-semibold text-sm text-white">Private Webinars</h4>
+                    <p className="text-sm text-white/70">
                       Monthly sessions with financial analysts and top-tier real
                       estate legal experts.
                     </p>
@@ -233,7 +233,7 @@ export default function Lobby() {
               </div>
               <Link
                 href="/blog"
-                className="inline-flex items-center gap-2 border border-foreground rounded-md px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-gold hover:text-secondary-foreground transition-colors active:scale-[0.97]"
+                className="inline-flex items-center gap-2 border border-white/50 text-white rounded-md px-6 py-3 text-xs font-bold uppercase tracking-wider hover:bg-gold hover:border-gold hover:text-secondary-foreground transition-colors active:scale-[0.97]"
               >
                 Enter the Academy
               </Link>

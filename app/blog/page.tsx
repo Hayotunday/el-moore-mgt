@@ -119,19 +119,19 @@ export default function Blog() {
       </section>
 
       {/* Legal Masterclass */}
-      <section className="">
+      <section className="bg-gradient-green">
         <div className="container py-16">
           <ScrollReveal>
-            <h2 className="text-2xl font-bold italic mb-1">
+            <h2 className="text-2xl font-bold italic mb-1 text-white">
               Legal Masterclass
             </h2>
-            <p className="text-sm text-muted-foreground mb-8">
+            <p className="text-sm text-white/70 mb-8">
               Asset protection and regulatory frameworks.
             </p>
           </ScrollReveal>
           <div className="grid md:grid-cols-2 gap-6">
             <ScrollReveal>
-              <div className="flex gap-6 bg-card text-card-foreground rounded-lg p-6 border border-border">
+              <div className="flex gap-6 bg-white/10 border border-white/15 text-white rounded-lg p-6">
                 <div className="w-24 h-32 rounded bg-muted shrink-0 flex items-center justify-center">
                   <BookOpen className="h-8 w-8 text-muted-foreground" />
                 </div>
@@ -139,10 +139,10 @@ export default function Blog() {
                   <span className="text-[10px] uppercase tracking-widest text-gold font-bold">
                     Advanced Module
                   </span>
-                  <h3 className="font-bold">
+                  <h3 className="font-bold text-white">
                     Tax Structuring for International Assets
                   </h3>
-                  <p className="text-sm text-muted-foreground">
+                  <p className="text-sm text-white/70">
                     A comprehensive guide to legally optimizing your tax
                     exposure across multi-jurisdictional property holdings.
                   </p>
@@ -154,33 +154,33 @@ export default function Blog() {
             </ScrollReveal>
             <div className="space-y-4">
               <ScrollReveal delay={0.1}>
-                <div className="bg-card text-card-foreground rounded-lg p-5 border border-border flex items-start gap-3">
+                <div className="bg-white/10 border border-white/15 text-white rounded-lg p-5 flex items-start gap-3">
                   <Scale className="h-5 w-5 text-gold mt-0.5 shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-sm">
-                      Understanding "Certificate of Occupancy"
+                    <h4 className="font-semibold text-sm text-white">
+                      Understanding \"Certificate of Occupancy\"
                     </h4>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-white/70 mt-1">
                       The vital document every Nigerian land investor must
                       master.
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <p className="text-xs text-white/50 mt-2 flex items-center gap-1">
                       <Clock className="h-3 w-3" /> 6 min read
                     </p>
                   </div>
                 </div>
               </ScrollReveal>
               <ScrollReveal delay={0.2}>
-                <div className="bg-card text-card-foreground rounded-lg p-5 border border-border flex items-start gap-3">
+                <div className="bg-white/10 border border-white/15 text-white rounded-lg p-5 flex items-start gap-3">
                   <Shield className="h-5 w-5 text-gold mt-0.5 shrink-0" />
                   <div>
-                    <h4 className="font-semibold text-sm">
+                    <h4 className="font-semibold text-sm text-white">
                       Smart Contracts in Real Estate
                     </h4>
-                    <p className="text-xs text-muted-foreground mt-1">
+                    <p className="text-xs text-white/70 mt-1">
                       How blockchain is revolutionizing title deeds and escrow.
                     </p>
-                    <p className="text-xs text-muted-foreground mt-2 flex items-center gap-1">
+                    <p className="text-xs text-white/50 mt-2 flex items-center gap-1">
                       <Clock className="h-3 w-3" /> 7 min read
                     </p>
                   </div>
@@ -194,12 +194,12 @@ export default function Blog() {
       {/* Newsletter */}
       <section className="container py-20">
         <ScrollReveal>
-          <div className="bg-card text-card-foreground rounded-xl p-10 flex flex-col md:flex-row items-center justify-between gap-6">
+          <div className="bg-gradient-green rounded-2xl p-10 flex flex-col md:flex-row items-center justify-between gap-6">
             <div>
-              <h2 className="text-2xl font-bold italic mb-1">
+              <h2 className="text-2xl font-bold italic mb-1 text-white">
                 The Curator's Digest
               </h2>
-              <p className="text-sm text-muted-foreground">
+              <p className="text-sm text-white/70">
                 Join 5,000+ elite investors who receive our bi-weekly
                 architectural and financial analysis directly in their vault.
               </p>
@@ -210,7 +210,7 @@ export default function Blog() {
                 placeholder="professional@email.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="border border-border rounded-md px-4 py-2.5 text-sm bg-background flex-1 md:w-64 focus:outline-none focus:ring-1 focus:ring-primary"
+                className="border border-white/20 rounded-md px-4 py-2.5 text-sm bg-white/10 text-white placeholder:text-white/50 flex-1 md:w-64 focus:outline-none focus:ring-1 focus:ring-gold"
               />
               <button className="bg-gold text-secondary-foreground px-5 py-2.5 rounded-md text-sm font-semibold hover:opacity-90 transition-opacity active:scale-[0.97] whitespace-nowrap">
                 Subscribe Now

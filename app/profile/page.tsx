@@ -113,7 +113,7 @@ export default function Profile() {
           {/* Portfolio */}
           <ScrollReveal>
             <h2 className="text-xl font-bold mb-4">My Portfolio</h2>
-            <div className="rounded-lg bg-card border border-gold/30 p-6 text-card-foreground flex flex-col sm:flex-row gap-6">
+            <div className="rounded-lg bg-primary p-6 text-primary-foreground flex flex-col sm:flex-row gap-6">
               <div className="flex-1 space-y-2">
                 <h3 className="text-lg font-bold text-gold">
                   Eko Atlantic Signature

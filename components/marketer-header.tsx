@@ -58,7 +58,7 @@ export default function MarketerHeader() {
         {/* Desktop Actions */}
         <div className="flex flex-1 items-center justify-end gap-2 lg:gap-4">
           <div className="flex items-center gap-3 pl-4 border-l border-border">
-            <div className="text-right hidden sm:block max-w-[200px]">
+            <div className="text-right hidden sm:block max-w-50">
               <p className="text-sm font-medium text-foreground truncate">
                 {marketerProfile.name}
               </p>

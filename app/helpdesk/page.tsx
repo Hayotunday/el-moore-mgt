@@ -63,7 +63,7 @@ export default function Helpdesk() {
                     placeholder="Johnathan Moore"
                     value={form.name}
                     onChange={(e) => update("name", e.target.value)}
-                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-card text-card-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
                   />
                 </div>
                 <div>
@@ -73,7 +73,7 @@ export default function Helpdesk() {
                   <select
                     value={form.interest}
                     onChange={(e) => update("interest", e.target.value)}
-                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-card text-card-foreground focus:outline-none focus:ring-1 focus:ring-gold"
+                    className="w-full border border-border rounded-md px-4 py-2.5 text-sm bg-background text-foreground focus:outline-none focus:ring-1 focus:ring-gold"
                   >
                     <option>Buy-to-Let Assets</option>
                     <option>Buy-to-Sell Assets</option>

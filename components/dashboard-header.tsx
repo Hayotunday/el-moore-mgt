@@ -30,7 +30,7 @@ export default function DashboardHeader() {
             className="text-lg font-bold tracking-tight text-foreground shrink-0"
           >
             <img
-              src={"/assets/el-moore.png"}
+              src={"/assets/el-moore-1.png"}
               alt="El-Moore Logo"
               className="h-12 w-auto"
             />
