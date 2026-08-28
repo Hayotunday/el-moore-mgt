@@ -1,5 +1,5 @@
-import { apiFetch, IS_MOCK } from "./client";
-import { delay, referrals, sales, uid } from "./mock-store";
+import { apiFetch } from "./client";
+import { listSales, type SaleWithDetails } from "./sales";
 import type { Referral } from "./types";
 
 export interface ReferralWithSale extends Referral {
@@ -8,61 +8,39 @@ export interface ReferralWithSale extends Referral {
   buyerName: string;
 }
 
-function joinSale(referral: Referral): ReferralWithSale {
+function joinSale(referral: Referral, sales: SaleWithDetails[]): ReferralWithSale {
   const sale = sales.find((s) => s.id === referral.saleId);
   return {
     ...referral,
     propertyId: sale?.propertyId ?? "",
-    saleAmount: sale?.totalAmount ?? 0,
+    saleAmount: sale ? Number(sale.totalAmount) : 0,
     buyerName: sale?.buyerName ?? "Unknown buyer",
   };
 }
 
+/** OFFICE_ADMIN only. */
 export async function listReferrals(): Promise<ReferralWithSale[]> {
-  if (IS_MOCK) {
-    await delay();
-    return referrals.map(joinSale).sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  }
-  return apiFetch<ReferralWithSale[]>("/referrals");
+  const [raw, sales] = await Promise.all([apiFetch<Referral[]>("/referrals"), listSales()]);
+  return raw
+    .map((r) => joinSale(r, sales))
+    .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
-export async function tagReferrer(input: {
-  saleId: string;
-  marketerId: string;
-  marketerName: string;
-  commissionAmount: number;
-}): Promise<Referral> {
-  if (IS_MOCK) {
-    await delay(400);
-    const sale = sales.find((s) => s.id === input.saleId);
-    if (!sale) throw new Error("Sale not found");
-    sale.marketerId = input.marketerId;
-    sale.marketerName = input.marketerName;
-
-    const newReferral: Referral = {
-      id: uid("ref"),
-      status: "PENDING",
-      paidAt: null,
-      createdAt: new Date().toISOString().slice(0, 10),
-      ...input,
-    };
-    referrals.push(newReferral);
-    return { ...newReferral };
-  }
-  return apiFetch<Referral>("/referrals", { method: "POST", body: JSON.stringify(input) });
+/** EXTERNAL_MARKETER only — the referrals attributed to the authenticated marketer. */
+export async function listMyReferrals(): Promise<Referral[]> {
+  return apiFetch<Referral[]>("/referrals/mine");
 }
 
+/** OFFICE_ADMIN only. Response shape isn't documented — passed through as-is. */
+export async function getReferralSummary(): Promise<unknown> {
+  return apiFetch("/referrals/summary");
+}
+
+export async function getReferral(id: string): Promise<Referral> {
+  return apiFetch<Referral>(`/referrals/${id}`);
+}
+
+/** OFFICE_ADMIN only. */
 export async function markReferralPaid(id: string): Promise<Referral> {
-  if (IS_MOCK) {
-    await delay(300);
-    const referral = referrals.find((r) => r.id === id);
-    if (!referral) throw new Error("Referral not found");
-    referral.status = "PAID";
-    referral.paidAt = new Date().toISOString().slice(0, 10);
-    return { ...referral };
-  }
-  return apiFetch<Referral>(`/referrals/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ status: "PAID" }),
-  });
+  return apiFetch<Referral>(`/referrals/${id}/mark-paid`, { method: "PATCH" });
 }

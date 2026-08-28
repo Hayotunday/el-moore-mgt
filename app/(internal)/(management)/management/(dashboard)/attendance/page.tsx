@@ -15,7 +15,7 @@ import {
 } from "@/components/management/data-table";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
-import { clockIn, clockOut, getTodayRecord, listAttendance } from "@/lib/api/attendance";
+import { clockIn, clockOut, getTodayRecord, getMyAttendance } from "@/lib/api/attendance";
 import type { AttendanceRecord } from "@/lib/api/types";
 import { formatDate } from "@/lib/utils";
 
@@ -28,9 +28,13 @@ export default function AttendancePage() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [record, all] = await Promise.all([getTodayRecord(user.id), listAttendance(user.id)]);
-    setToday(record);
-    setHistory(all);
+    try {
+      const [record, all] = await Promise.all([getTodayRecord(), getMyAttendance()]);
+      setToday(record);
+      setHistory(all);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load attendance.");
+    }
   }, [user]);
 
   useEffect(() => {
@@ -46,9 +50,11 @@ export default function AttendancePage() {
     if (!user) return;
     setBusy(true);
     try {
-      await clockIn(user.id, user.name);
+      await clockIn();
       toast.success("Clocked in.");
       await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not clock in.");
     } finally {
       setBusy(false);
     }
@@ -58,9 +64,11 @@ export default function AttendancePage() {
     if (!user) return;
     setBusy(true);
     try {
-      await clockOut(user.id);
+      await clockOut();
       toast.success("Clocked out.");
       await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not clock out.");
     } finally {
       setBusy(false);
     }

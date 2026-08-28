@@ -16,7 +16,7 @@ interface AuthContextType {
   user: User | null;
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
-  logout: () => void;
+  logout: () => Promise<void>;
   hasAccess: (pathname: string) => boolean;
   pages: ReturnType<typeof getPagesForRole>;
 }
@@ -49,7 +49,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return loggedInUser;
   };
 
-  const logout = () => {
+  const logout = async () => {
+    await authApi.logout();
     setStoredToken(null);
     window.localStorage.removeItem(USER_STORAGE_KEY);
     setUser(null);

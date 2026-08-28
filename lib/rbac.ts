@@ -18,8 +18,10 @@ import type { Role } from "@/lib/api/types";
 
 export type { Role };
 
-export const ROLES: Role[] = [
-  "MD_GM",
+/** The subset of the backend's full role enum that gets access to /management/**. */
+export const MANAGEMENT_ROLES: Role[] = [
+  "MD",
+  "GM",
   "OFFICE_ADMIN",
   "SITE_COORDINATOR",
   "TEAM_LEAD",
@@ -27,13 +29,18 @@ export const ROLES: Role[] = [
   "CUSTOMER_CARE",
 ];
 
+/** Every role the backend knows about, for display purposes (e.g. a user's role badge). */
 export const ROLE_LABELS: Record<Role, string> = {
-  MD_GM: "Managing Director / GM",
+  MD: "Managing Director",
+  GM: "General Manager",
   OFFICE_ADMIN: "Office Admin",
   SITE_COORDINATOR: "Site Coordinator",
   TEAM_LEAD: "Team Lead",
   ACCOUNTANT: "Accountant",
   CUSTOMER_CARE: "Customer Care",
+  INTERNAL_MARKETER: "Internal Marketer",
+  EXTERNAL_MARKETER: "External Marketer",
+  basic: "Basic Account",
 };
 
 export type PageKey =
@@ -67,7 +74,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/overview",
     description: "Daily activity at a glance",
     icon: LayoutDashboard,
-    roles: [...ROLES],
+    roles: [...MANAGEMENT_ROLES],
   },
   {
     key: "properties",
@@ -75,7 +82,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/properties",
     description: "Inventory & sale status",
     icon: Building2,
-    roles: ["MD_GM", "OFFICE_ADMIN", "SITE_COORDINATOR"],
+    roles: ["MD", "GM", "OFFICE_ADMIN", "SITE_COORDINATOR"],
   },
   {
     key: "sales",
@@ -83,15 +90,15 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/sales",
     description: "Outright & installment records",
     icon: Wallet,
-    roles: ["MD_GM", "OFFICE_ADMIN", "SITE_COORDINATOR", "ACCOUNTANT"],
+    roles: ["MD", "GM", "OFFICE_ADMIN", "TEAM_LEAD", "ACCOUNTANT"],
   },
   {
     key: "referrals",
     label: "Referrals",
     path: "/management/referrals",
-    description: "Tag referrers & commissions",
+    description: "Marketer commissions",
     icon: Share2,
-    roles: ["MD_GM", "OFFICE_ADMIN", "SITE_COORDINATOR", "ACCOUNTANT"],
+    roles: ["MD", "GM", "OFFICE_ADMIN"],
   },
   {
     key: "inspections",
@@ -99,15 +106,15 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/inspections",
     description: "Customer land inspection requests",
     icon: MapPinned,
-    roles: ["MD_GM", "OFFICE_ADMIN", "SITE_COORDINATOR"],
+    roles: ["MD", "GM", "OFFICE_ADMIN", "SITE_COORDINATOR"],
   },
   {
     key: "newsletter",
     label: "Newsletter",
     path: "/management/newsletter",
-    description: "Bulk mail & automated greetings",
+    description: "Campaigns & notification log",
     icon: Newspaper,
-    roles: ["MD_GM", "OFFICE_ADMIN", "CUSTOMER_CARE"],
+    roles: ["MD", "GM", "OFFICE_ADMIN", "CUSTOMER_CARE"],
   },
   {
     key: "blog",
@@ -115,7 +122,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/blog",
     description: "Manage published articles",
     icon: BookOpen,
-    roles: ["MD_GM", "OFFICE_ADMIN"],
+    roles: ["MD", "GM", "OFFICE_ADMIN"],
   },
   {
     key: "customers",
@@ -123,7 +130,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/customers",
     description: "Buyer records",
     icon: Users,
-    roles: ["MD_GM", "OFFICE_ADMIN", "SITE_COORDINATOR", "CUSTOMER_CARE"],
+    roles: ["MD", "GM", "OFFICE_ADMIN", "TEAM_LEAD", "CUSTOMER_CARE", "ACCOUNTANT"],
   },
   {
     key: "users",
@@ -131,7 +138,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/users",
     description: "Manage internal access",
     icon: UserCog,
-    roles: ["MD_GM", "OFFICE_ADMIN"],
+    roles: ["MD", "GM", "OFFICE_ADMIN"],
   },
   {
     key: "hr",
@@ -139,7 +146,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/hr",
     description: "Staff stats & reports",
     icon: ClipboardList,
-    roles: ["MD_GM", "OFFICE_ADMIN", "TEAM_LEAD"],
+    roles: ["MD", "GM", "OFFICE_ADMIN", "TEAM_LEAD"],
   },
   {
     key: "attendance",
@@ -147,7 +154,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/attendance",
     description: "Clock in / clock out",
     icon: Clock,
-    roles: [...ROLES],
+    roles: [...MANAGEMENT_ROLES],
   },
   {
     key: "daily-report",
@@ -155,7 +162,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/daily-report",
     description: "Submit today's report",
     icon: FileText,
-    roles: [...ROLES],
+    roles: [...MANAGEMENT_ROLES],
   },
   {
     key: "finance",
@@ -163,7 +170,7 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/finance",
     description: "Office transactions",
     icon: DollarSign,
-    roles: ["MD_GM", "OFFICE_ADMIN", "ACCOUNTANT"],
+    roles: ["MD", "GM", "OFFICE_ADMIN", "ACCOUNTANT"],
   },
 ];
 

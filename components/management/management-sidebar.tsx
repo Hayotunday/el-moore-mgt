@@ -18,8 +18,8 @@ export default function ManagementSidebar() {
     setMounted(true);
   }, []);
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    await logout();
     router.push("/management");
   };
 

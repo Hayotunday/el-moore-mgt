@@ -2,6 +2,7 @@
 
 import { useEffect, useMemo, useState, useCallback } from "react";
 import { Users, ClipboardCheck } from "lucide-react";
+import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
 import SearchFilterBar from "@/components/management/search-filter-bar";
@@ -15,8 +16,8 @@ import {
   DataTableEmpty,
 } from "@/components/management/data-table";
 import { listUsers } from "@/lib/api/users";
-import { listAttendance } from "@/lib/api/attendance";
-import { listReports } from "@/lib/api/daily-reports";
+import { getAllAttendance } from "@/lib/api/attendance";
+import { getAllReports } from "@/lib/api/daily-reports";
 import type { AttendanceRecord, DailyTaskReport, ManagementUser } from "@/lib/api/types";
 import { ROLE_LABELS } from "@/lib/rbac";
 import { formatDate } from "@/lib/utils";
@@ -26,23 +27,30 @@ export default function HrPage() {
   const [attendance, setAttendance] = useState<AttendanceRecord[]>([]);
   const [selectedStaffId, setSelectedStaffId] = useState<string>("all");
   const [search, setSearch] = useState("");
-  const [reports, setReports] = useState<DailyTaskReport[]>([]);
+  const [allReports, setAllReports] = useState<DailyTaskReport[]>([]);
 
   const load = useCallback(async () => {
-    const [u, a] = await Promise.all([listUsers(), listAttendance()]);
-    setUsers(u);
-    setAttendance(a);
+    try {
+      const [u, a, r] = await Promise.all([listUsers(), getAllAttendance(), getAllReports()]);
+      setUsers(u);
+      setAttendance(a);
+      setAllReports(r);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load HR data.");
+    }
   }, []);
 
   useEffect(() => {
     load();
   }, [load]);
 
-  useEffect(() => {
-    (async () => {
-      setReports(await listReports(selectedStaffId === "all" ? undefined : selectedStaffId));
-    })();
-  }, [selectedStaffId]);
+  const reports = useMemo(
+    () =>
+      selectedStaffId === "all"
+        ? allReports
+        : allReports.filter((r) => r.staffId === selectedStaffId),
+    [allReports, selectedStaffId],
+  );
 
   const filteredStaff = useMemo(() => {
     const q = search.trim().toLowerCase();

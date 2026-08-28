@@ -1,86 +1,80 @@
-import { apiFetch, IS_MOCK } from "./client";
-import {
-  delay,
-  newsletterSubscribers,
-  newsletterCampaigns,
-  notificationLog,
-  automatedGreetingSettings,
-  uid,
-} from "./mock-store";
-import type {
-  AutomatedGreetingSettings,
-  NewsletterCampaign,
-  NewsletterSubscriber,
-  NotificationLogEntry,
-} from "./types";
+import { apiFetch, uploadToPresignedUrl } from "./client";
+import { delay, automatedGreetingSettings } from "./mock-store";
+import type { AutomatedGreetingSettings, NewsletterCampaign, NewsletterSubscriber } from "./types";
 
+/** Public. */
+export async function subscribe(email: string): Promise<void> {
+  await apiFetch<void>("/newsletter/subscribe", { method: "POST", body: JSON.stringify({ email }) });
+}
+
+/** Public. */
+export async function unsubscribe(email: string): Promise<void> {
+  await apiFetch<void>("/newsletter/unsubscribe", { method: "POST", body: JSON.stringify({ email }) });
+}
+
+/** OFFICE_ADMIN only. */
 export async function listSubscribers(): Promise<NewsletterSubscriber[]> {
-  if (IS_MOCK) {
-    await delay();
-    return [...newsletterSubscribers];
-  }
   return apiFetch<NewsletterSubscriber[]>("/newsletter/subscribers");
 }
 
+/** OFFICE_ADMIN only. */
 export async function listCampaigns(): Promise<NewsletterCampaign[]> {
-  if (IS_MOCK) {
-    await delay();
-    return [...newsletterCampaigns].sort((a, b) => (a.sentAt < b.sentAt ? 1 : -1));
-  }
   return apiFetch<NewsletterCampaign[]>("/newsletter/campaigns");
 }
 
-export async function sendCampaign(input: {
-  subject: string;
-  body: string;
-  audience: string;
-  recipientCount: number;
-  createdById: string;
-  createdByName: string;
-}): Promise<NewsletterCampaign> {
-  if (IS_MOCK) {
-    await delay(700);
-    const campaign: NewsletterCampaign = {
-      id: uid("camp"),
-      sentAt: new Date().toISOString().slice(0, 10),
-      ...input,
-    };
-    newsletterCampaigns.unshift(campaign);
-    return { ...campaign };
-  }
+/** OFFICE_ADMIN only. Creates a draft campaign. */
+export async function createCampaign(input: { subject: string; body: string }): Promise<NewsletterCampaign> {
   return apiFetch<NewsletterCampaign>("/newsletter/campaigns", {
     method: "POST",
     body: JSON.stringify(input),
   });
 }
 
-export async function listNotificationLog(): Promise<NotificationLogEntry[]> {
-  if (IS_MOCK) {
-    await delay();
-    return [...notificationLog].sort((a, b) => (a.sentAt < b.sentAt ? 1 : -1));
-  }
-  return apiFetch<NotificationLogEntry[]>("/notifications/log");
+/**
+ * OFFICE_ADMIN only. Marks a campaign as sent — the API sends it to all active
+ * subscribers server-side; there's no endpoint to target a custom recipient list.
+ */
+export async function sendCampaign(id: string): Promise<NewsletterCampaign> {
+  return apiFetch<NewsletterCampaign>(`/newsletter/campaigns/${id}/send`, { method: "POST" });
 }
 
+/** Convenience: create + immediately send a campaign to all active subscribers. */
+export async function createAndSendCampaign(input: {
+  subject: string;
+  body: string;
+}): Promise<NewsletterCampaign> {
+  const draft = await createCampaign(input);
+  return sendCampaign(draft.id);
+}
+
+/** OFFICE_ADMIN only. */
+export async function uploadCampaignCoverImage(id: string, file: File): Promise<string> {
+  const { uploadUrl } = await apiFetch<{ uploadUrl: string }>(
+    `/newsletter/campaigns/${id}/cover-image`,
+    { method: "PATCH", body: JSON.stringify({ filename: file.name }) },
+  );
+  await uploadToPresignedUrl(uploadUrl, file);
+  const coverImageUrl = uploadUrl.split("?")[0];
+  await apiFetch<void>(`/newsletter/campaigns/${id}/cover-image/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ coverImageUrl }),
+  });
+  return coverImageUrl;
+}
+
+// ── Automated greetings ──────────────────────────────────────────────────
+// No endpoint exists on the live backend for configuring these triggers — this is a
+// local preview only, always backed by the mock store.
 export async function getAutomatedGreetingSettings(): Promise<AutomatedGreetingSettings> {
-  if (IS_MOCK) {
-    await delay(150);
-    return { ...automatedGreetingSettings };
-  }
-  return apiFetch<AutomatedGreetingSettings>("/notifications/automated-greetings");
+  await delay(150);
+  return { ...automatedGreetingSettings };
 }
 
 export async function toggleAutomatedGreeting(
   key: keyof AutomatedGreetingSettings,
   value: boolean,
 ): Promise<AutomatedGreetingSettings> {
-  if (IS_MOCK) {
-    await delay(250);
-    automatedGreetingSettings[key] = value;
-    return { ...automatedGreetingSettings };
-  }
-  return apiFetch<AutomatedGreetingSettings>("/notifications/automated-greetings", {
-    method: "PATCH",
-    body: JSON.stringify({ [key]: value }),
-  });
+  await delay(250);
+  automatedGreetingSettings[key] = value;
+  return { ...automatedGreetingSettings };
 }

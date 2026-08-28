@@ -1,17 +1,35 @@
+/**
+ * Types mirroring the live el-moore-api backend (https://el-moore.onrender.com/docs).
+ * Field names/shapes are taken directly from its OpenAPI spec. Amounts that the API
+ * documents as decimal strings (price, totalAmount, amountPaid, amount, commissionAmount)
+ * are kept as `string` here — convert with `Number()` at the point of use.
+ */
+
+// Full role enum as returned by the backend. Only the first 7 are "management" roles
+// with access to /management/**; INTERNAL_MARKETER/EXTERNAL_MARKETER use /marketer,
+// and "basic" is a plain public account.
 export type Role =
-  | "MD_GM"
+  | "MD"
+  | "GM"
   | "OFFICE_ADMIN"
   | "SITE_COORDINATOR"
   | "TEAM_LEAD"
   | "ACCOUNTANT"
-  | "CUSTOMER_CARE";
+  | "CUSTOMER_CARE"
+  | "INTERNAL_MARKETER"
+  | "EXTERNAL_MARKETER"
+  | "basic";
+
+export type MarketerStatus = "PENDING" | "APPROVED" | "REJECTED";
 
 export interface ManagementUser {
   id: string;
   name: string;
   email: string;
   role: Role;
-  teamLeadId?: string | null;
+  isActive: boolean;
+  marketerStatus?: MarketerStatus | null;
+  avatarUrl?: string | null;
   createdAt: string;
 }
 
@@ -21,10 +39,16 @@ export interface Property {
   id: string;
   title: string;
   location: string;
-  type: string;
-  price: number;
+  price: string;
   status: PropertyStatus;
-  createdAt: string;
+  createdAt?: string;
+}
+
+export interface PropertyImage {
+  id: string;
+  propertyId: string;
+  imageUrl: string;
+  isPrimary: boolean;
 }
 
 export type SaleType = "OUTRIGHT" | "INSTALLMENT";
@@ -32,15 +56,14 @@ export type SaleType = "OUTRIGHT" | "INSTALLMENT";
 export interface Sale {
   id: string;
   propertyId: string;
+  customerId?: string | null;
   buyerName: string;
   buyerPhone: string;
-  buyerEmail: string;
+  buyerEmail?: string | null;
   saleType: SaleType;
-  totalAmount: number;
+  totalAmount: string;
   soldById?: string | null;
-  soldByName?: string | null;
   marketerId?: string | null;
-  marketerName?: string | null;
   createdAt: string;
 }
 
@@ -49,15 +72,24 @@ export interface InstallmentPlan {
   saleId: string;
   numberOfInstallments: number;
   startDate: string;
-  overdue: boolean;
+  overdue?: boolean;
 }
 
 export interface InstallmentPayment {
   id: string;
   saleId: string;
-  amountPaid: number;
+  amountPaid: string;
   paidAt: string;
   note?: string;
+}
+
+export type SaleDocumentType = "CONTRACT" | "ID" | "OTHER";
+
+export interface SaleDocument {
+  id: string;
+  saleId: string;
+  documentType: SaleDocumentType;
+  uploadedAt: string;
 }
 
 export type ReferralStatus = "PENDING" | "PAID";
@@ -65,9 +97,8 @@ export type ReferralStatus = "PENDING" | "PAID";
 export interface Referral {
   id: string;
   marketerId: string;
-  marketerName: string;
   saleId: string;
-  commissionAmount: number;
+  commissionAmount: string;
   status: ReferralStatus;
   paidAt?: string | null;
   createdAt: string;
@@ -79,18 +110,16 @@ export interface FinancialTransaction {
   id: string;
   type: TransactionType;
   category: string;
-  amount: number;
+  amount: string;
   date: string;
   saleId?: string | null;
   note?: string;
-  recordedById: string;
-  recordedByName: string;
 }
 
 export interface AttendanceRecord {
   id: string;
   staffId: string;
-  staffName: string;
+  staffName?: string;
   date: string;
   clockIn: string;
   clockOut?: string | null;
@@ -99,7 +128,7 @@ export interface AttendanceRecord {
 export interface DailyTaskReport {
   id: string;
   staffId: string;
-  staffName: string;
+  staffName?: string;
   date: string;
   content: string;
   createdAt: string;
@@ -109,86 +138,84 @@ export interface BlogPost {
   id: string;
   title: string;
   slug: string;
-  excerpt: string;
   content: string;
-  category: string;
-  image?: string;
-  authorId: string;
-  authorName: string;
+  coverImageUrl?: string | null;
   published: boolean;
   publishedAt?: string | null;
-  createdAt: string;
+  createdAt?: string;
 }
-
-export type SubscriberType = "CUSTOMER" | "MARKETER" | "SUBSCRIBER";
 
 export interface NewsletterSubscriber {
   id: string;
-  name: string;
   email: string;
-  type: SubscriberType;
-  subscribedAt: string;
-  unsubscribed: boolean;
+  unsubscribed?: boolean;
+  subscribedAt?: string;
 }
 
 export interface NewsletterCampaign {
   id: string;
   subject: string;
   body: string;
-  audience: string;
-  recipientCount: number;
-  sentAt: string;
-  createdById: string;
-  createdByName: string;
+  coverImageUrl?: string | null;
+  sentAt?: string | null;
+  createdAt?: string;
 }
-
-export type NotificationChannel = "EMAIL" | "WHATSAPP";
-export type NotificationTrigger =
-  | "BIRTHDAY"
-  | "PAYMENT_REMINDER"
-  | "INSPECTION_FOLLOWUP"
-  | "COMMISSION_PAID";
 
 export interface NotificationLogEntry {
   id: string;
-  channel: NotificationChannel;
-  triggerType: NotificationTrigger;
+  channel: string;
   recipient: string;
-  status: "SENT" | "FAILED";
+  status: string;
   sentAt: string;
+  triggerType?: string;
+}
+
+export type ChatSender = "CUSTOMER" | "BOT" | "STAFF";
+export type ConversationStatus = "OPEN" | "HANDED_OFF" | "CLOSED";
+
+export interface ChatConversation {
+  id: string;
+  customerIdentifier: string;
+  status: ConversationStatus;
+  createdAt?: string;
+}
+
+export interface ChatMessage {
+  id: string;
+  conversationId: string;
+  content: string;
+  sender: ChatSender;
+  sentAt?: string;
+}
+
+export interface Customer {
+  id: string;
+  fullName: string;
+  phone: string;
+  email?: string | null;
+  dateOfBirth?: string | null;
+  createdAt?: string;
+}
+
+// ── Mock-only concepts ──────────────────────────────────────────────────
+// The live backend has no endpoint for these yet — they stay backed entirely by
+// lib/api/mock-store.ts regardless of NEXT_PUBLIC_API_BASE_URL. Shape follows the
+// `site_inspections` table added to el-moore-technical-breakdown.md — not deployed
+// yet, but matching it now keeps the eventual swap-over a drop-in.
+export type InspectionStatus = "SCHEDULED" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
+
+export interface InspectionRequest {
+  id: string;
+  customerId: string;
+  propertyId: string;
+  scheduledById: string;
+  scheduledAt: string;
+  status: InspectionStatus;
+  followUpSent: boolean;
 }
 
 export interface AutomatedGreetingSettings {
   birthday: boolean;
   paymentReminder: boolean;
   inspectionFollowup: boolean;
-}
-
-export type InspectionStatus = "PENDING" | "DONE";
-
-export interface InspectionRequest {
-  id: string;
-  propertyId: string;
-  propertyTitle: string;
-  customerName: string;
-  customerPhone: string;
-  customerEmail: string;
-  preferredDate: string;
-  note?: string;
-  status: InspectionStatus;
-  requestedAt: string;
-  completedAt?: string | null;
-  completedById?: string | null;
-}
-
-export interface Customer {
-  key: string;
-  name: string;
-  email: string;
-  phone: string;
-  totalSpent: number;
-  saleCount: number;
-  saleTypes: SaleType[];
-  properties: string[];
-  lastPurchaseDate: string;
 }

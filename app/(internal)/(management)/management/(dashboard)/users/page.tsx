@@ -31,11 +31,19 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { listUsers, updateUserRole, inviteUser } from "@/lib/api/users";
+import { listUsers, assignUserRole, createUser } from "@/lib/api/users";
 import type { ManagementUser } from "@/lib/api/types";
-import { ROLES, ROLE_LABELS, type Role } from "@/lib/rbac";
+import { MANAGEMENT_ROLES, ROLE_LABELS, type Role } from "@/lib/rbac";
 import { formatDate } from "@/lib/utils";
+
+const EMPTY_FORM = {
+  name: "",
+  email: "",
+  password: "",
+  role: "SITE_COORDINATOR" as Role,
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<ManagementUser[]>([]);
@@ -44,12 +52,17 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({ name: "", email: "", role: "SITE_COORDINATOR" as Role });
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setUsers(await listUsers());
-    setLoading(false);
+    try {
+      setUsers(await listUsers());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load users.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -60,35 +73,44 @@ export default function UsersPage() {
     const q = search.trim().toLowerCase();
     return users.filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
-      if (q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+      if (
+        q &&
+        !u.name.toLowerCase().includes(q) &&
+        !u.email.toLowerCase().includes(q)
+      )
+        return false;
       return true;
     });
   }, [users, search, roleFilter]);
 
   const handleRoleChange = async (userId: string, role: Role) => {
     try {
-      await updateUserRole(userId, role);
+      await assignUserRole(userId, role);
       toast.success("Role updated.");
       await load();
-    } catch {
-      toast.error("Could not update role.");
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Could not update role.",
+      );
     }
   };
 
   const handleInvite = async () => {
-    if (!form.name || !form.email) {
-      toast.error("Name and email are required.");
+    if (!form.name || !form.email || !form.password) {
+      toast.error("Name, email and a starting password are required.");
       return;
     }
     setSaving(true);
     try {
-      await inviteUser(form);
-      toast.success("User invited.");
+      await createUser(form);
+      toast.success("User created.");
       setDialogOpen(false);
-      setForm({ name: "", email: "", role: "SITE_COORDINATOR" });
+      setForm(EMPTY_FORM);
       await load();
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not invite user.");
+      toast.error(
+        err instanceof Error ? err.message : "Could not create user.",
+      );
     } finally {
       setSaving(false);
     }
@@ -101,20 +123,28 @@ export default function UsersPage() {
         subtitle="Everyone with access to the management side of El-Moore, and what they can see."
         action={
           <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4" /> Invite User
+            <Plus className="h-4 w-4" /> Add User
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <StatCard label="Total Users" value={users.length} icon={<UserCog className="h-6 w-6" />} />
+        <StatCard
+          label="Total Users"
+          value={users.length}
+          icon={<UserCog className="h-6 w-6" />}
+        />
         <StatCard
           label="Leadership"
-          value={users.filter((u) => u.role === "MD_GM" || u.role === "OFFICE_ADMIN").length}
+          value={users.filter((u) => u.role === "MD" || u.role === "GM").length}
           variant="gold"
           icon={<UserCog className="h-6 w-6" />}
         />
-        <StatCard label="Roles In Use" value={ROLES.length} icon={<UserCog className="h-6 w-6" />} />
+        <StatCard
+          label="Roles In Use"
+          value={MANAGEMENT_ROLES.length}
+          icon={<UserCog className="h-6 w-6" />}
+        />
       </div>
 
       <SearchFilterBar
@@ -127,7 +157,10 @@ export default function UsersPage() {
             label: "Role",
             value: roleFilter,
             onChange: setRoleFilter,
-            options: ROLES.map((r) => ({ label: ROLE_LABELS[r], value: r })),
+            options: MANAGEMENT_ROLES.map((r) => ({
+              label: ROLE_LABELS[r],
+              value: r,
+            })),
           },
         ]}
       />
@@ -146,12 +179,15 @@ export default function UsersPage() {
               <DataTableCell className="font-medium">{u.name}</DataTableCell>
               <DataTableCell>{u.email}</DataTableCell>
               <DataTableCell>
-                <Select value={u.role} onValueChange={(v) => handleRoleChange(u.id, v as Role)}>
+                <Select
+                  value={u.role}
+                  onValueChange={(v) => handleRoleChange(u.id, v as Role)}
+                >
                   <SelectTrigger className="w-56">
                     <SelectValue />
                   </SelectTrigger>
                   <SelectContent>
-                    {ROLES.map((r) => (
+                    {MANAGEMENT_ROLES.map((r) => (
                       <SelectItem key={r} value={r}>
                         {ROLE_LABELS[r]}
                       </SelectItem>
@@ -159,38 +195,64 @@ export default function UsersPage() {
                   </SelectContent>
                 </Select>
               </DataTableCell>
-              <DataTableCell align="right">{formatDate(u.createdAt)}</DataTableCell>
+              <DataTableCell align="right">
+                {u.createdAt ? formatDate(u.createdAt) : "—"}
+              </DataTableCell>
             </DataTableRow>
           ))}
         </DataTableBody>
       </DataTable>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogDescription className="invisible">Users</DialogDescription>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Invite User</DialogTitle>
+            <DialogTitle>Add User</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label>Name</Label>
-              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+              <Input
+                value={form.name}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, name: e.target.value }))
+                }
+              />
             </div>
             <div className="grid gap-2">
               <Label>Email</Label>
               <Input
                 type="email"
                 value={form.email}
-                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, email: e.target.value }))
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Starting Password</Label>
+              <Input
+                type="password"
+                value={form.password}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, password: e.target.value }))
+                }
+                placeholder="At least 8 characters"
               />
             </div>
             <div className="grid gap-2">
               <Label>Role</Label>
-              <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v as Role }))}>
+              <Select
+                value={form.role}
+                onValueChange={(v) =>
+                  setForm((f) => ({ ...f, role: v as Role }))
+                }
+              >
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
-                  {ROLES.map((r) => (
+                  {MANAGEMENT_ROLES.map((r) => (
                     <SelectItem key={r} value={r}>
                       {ROLE_LABELS[r]}
                     </SelectItem>
@@ -204,7 +266,7 @@ export default function UsersPage() {
               Cancel
             </Button>
             <Button onClick={handleInvite} disabled={saving}>
-              {saving ? "Inviting…" : "Send Invite"}
+              {saving ? "Creating…" : "Create User"}
             </Button>
           </DialogFooter>
         </DialogContent>

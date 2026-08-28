@@ -1,46 +1,33 @@
-import { apiFetch, IS_MOCK } from "./client";
 import { delay, inspectionRequests } from "./mock-store";
 import type { InspectionRequest, InspectionStatus } from "./types";
 
+/**
+ * Site Inspections has no corresponding endpoint on the live el-moore-api backend yet —
+ * this module always reads/writes the local mock store, regardless of NEXT_PUBLIC_API_BASE_URL.
+ * The shape matches the `site_inspections` table added to el-moore-technical-breakdown.md
+ * so wiring this up to a real endpoint later is a drop-in swap.
+ */
+
 export interface InspectionFilter {
   status?: InspectionStatus;
-  search?: string;
 }
 
 export async function listInspectionRequests(
   filter: InspectionFilter = {},
 ): Promise<InspectionRequest[]> {
-  if (IS_MOCK) {
-    await delay();
-    const search = filter.search?.trim().toLowerCase();
-    return inspectionRequests
-      .filter((r) => !filter.status || r.status === filter.status)
-      .filter(
-        (r) =>
-          !search ||
-          r.customerName.toLowerCase().includes(search) ||
-          r.propertyTitle.toLowerCase().includes(search),
-      )
-      .sort((a, b) => (a.requestedAt < b.requestedAt ? 1 : -1));
-  }
-  return apiFetch<InspectionRequest[]>("/inspections");
+  await delay();
+  return inspectionRequests
+    .filter((r) => !filter.status || r.status === filter.status)
+    .sort((a, b) => (a.scheduledAt < b.scheduledAt ? 1 : -1));
 }
 
-export async function markInspectionDone(
+export async function updateInspectionStatus(
   id: string,
-  completedById: string,
+  status: InspectionStatus,
 ): Promise<InspectionRequest> {
-  if (IS_MOCK) {
-    await delay(300);
-    const request = inspectionRequests.find((r) => r.id === id);
-    if (!request) throw new Error("Inspection request not found");
-    request.status = "DONE";
-    request.completedAt = new Date().toISOString().slice(0, 10);
-    request.completedById = completedById;
-    return { ...request };
-  }
-  return apiFetch<InspectionRequest>(`/inspections/${id}`, {
-    method: "PATCH",
-    body: JSON.stringify({ status: "DONE" }),
-  });
+  await delay(300);
+  const request = inspectionRequests.find((r) => r.id === id);
+  if (!request) throw new Error("Inspection request not found");
+  request.status = status;
+  return { ...request };
 }

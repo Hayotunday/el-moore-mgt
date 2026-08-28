@@ -1,5 +1,4 @@
-import { apiFetch, IS_MOCK } from "./client";
-import { delay, blogPosts, uid } from "./mock-store";
+import { apiFetch, uploadToPresignedUrl } from "./client";
 import type { BlogPost } from "./types";
 
 function slugify(title: string) {
@@ -10,77 +9,66 @@ function slugify(title: string) {
     .replace(/\s+/g, "-");
 }
 
-export async function listPosts(opts: { publishedOnly?: boolean } = {}): Promise<BlogPost[]> {
-  if (IS_MOCK) {
-    await delay();
-    return blogPosts
-      .filter((p) => !opts.publishedOnly || p.published)
-      .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
-  }
-  return apiFetch<BlogPost[]>(`/blog${opts.publishedOnly ? "?published=true" : ""}`);
+/** Public — published posts only. */
+export async function listPublishedPosts(): Promise<BlogPost[]> {
+  return apiFetch<BlogPost[]>("/blog/posts");
 }
 
+/** Public — a single published post by slug or id. */
+export async function getPostBySlug(slug: string): Promise<BlogPost> {
+  return apiFetch<BlogPost>(`/blog/posts/${slug}`);
+}
+
+/** OFFICE_ADMIN only — every post, including drafts. */
+export async function listAllPosts(): Promise<BlogPost[]> {
+  return apiFetch<BlogPost[]>("/blog/posts/admin");
+}
+
+/** OFFICE_ADMIN only. */
 export async function createPost(input: {
   title: string;
-  excerpt: string;
+  slug?: string;
   content: string;
-  category: string;
-  image?: string;
-  authorId: string;
-  authorName: string;
-  published: boolean;
 }): Promise<BlogPost> {
-  if (IS_MOCK) {
-    await delay(400);
-    const newPost: BlogPost = {
-      id: uid("post"),
-      slug: slugify(input.title),
-      publishedAt: input.published ? new Date().toISOString().slice(0, 10) : null,
-      createdAt: new Date().toISOString().slice(0, 10),
-      ...input,
-    };
-    blogPosts.unshift(newPost);
-    return { ...newPost };
-  }
-  return apiFetch<BlogPost>("/blog", { method: "POST", body: JSON.stringify(input) });
+  const slug = input.slug || slugify(input.title);
+  return apiFetch<BlogPost>("/blog/posts", {
+    method: "POST",
+    body: JSON.stringify({ title: input.title, slug, content: input.content }),
+  });
 }
 
+/** OFFICE_ADMIN only. */
 export async function updatePost(
   id: string,
-  input: Partial<Pick<BlogPost, "title" | "excerpt" | "content" | "category" | "image">>,
+  input: Partial<Pick<BlogPost, "title" | "content">> & { slug?: string },
 ): Promise<BlogPost> {
-  if (IS_MOCK) {
-    await delay(300);
-    const post = blogPosts.find((p) => p.id === id);
-    if (!post) throw new Error("Post not found");
-    Object.assign(post, input);
-    if (input.title) post.slug = slugify(input.title);
-    return { ...post };
-  }
-  return apiFetch<BlogPost>(`/blog/${id}`, { method: "PATCH", body: JSON.stringify(input) });
+  return apiFetch<BlogPost>(`/blog/posts/${id}`, { method: "PATCH", body: JSON.stringify(input) });
 }
 
+/** OFFICE_ADMIN only. */
 export async function setPostPublished(id: string, published: boolean): Promise<BlogPost> {
-  if (IS_MOCK) {
-    await delay(300);
-    const post = blogPosts.find((p) => p.id === id);
-    if (!post) throw new Error("Post not found");
-    post.published = published;
-    post.publishedAt = published ? new Date().toISOString().slice(0, 10) : null;
-    return { ...post };
-  }
-  return apiFetch<BlogPost>(`/blog/${id}`, {
+  return apiFetch<BlogPost>(`/blog/posts/${id}/publish`, {
     method: "PATCH",
     body: JSON.stringify({ published }),
   });
 }
 
+/** OFFICE_ADMIN only. */
 export async function deletePost(id: string): Promise<void> {
-  if (IS_MOCK) {
-    await delay(300);
-    const idx = blogPosts.findIndex((p) => p.id === id);
-    if (idx !== -1) blogPosts.splice(idx, 1);
-    return;
-  }
-  await apiFetch<void>(`/blog/${id}`, { method: "DELETE" });
+  await apiFetch<void>(`/blog/posts/${id}`, { method: "DELETE" });
+}
+
+/** OFFICE_ADMIN only. Uploads a file to R2 via a presigned URL, then confirms it. */
+export async function uploadPostCoverImage(id: string, file: File): Promise<string> {
+  const { uploadUrl } = await apiFetch<{ uploadUrl: string }>(`/blog/posts/${id}/cover-image`, {
+    method: "PATCH",
+    body: JSON.stringify({ filename: file.name }),
+  });
+  await uploadToPresignedUrl(uploadUrl, file);
+  const coverImageUrl = uploadUrl.split("?")[0];
+  await apiFetch<void>(`/blog/posts/${id}/cover-image/confirm`, {
+    method: "POST",
+    body: JSON.stringify({ coverImageUrl }),
+  });
+  return coverImageUrl;
 }

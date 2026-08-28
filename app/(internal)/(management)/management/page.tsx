@@ -3,21 +3,12 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
-import {
-  ShieldCheck,
-  TrendingUp,
-  Users,
-  ChevronDown,
-  ArrowRight,
-  Lock,
-} from "lucide-react";
+import { ShieldCheck, TrendingUp, Users, ArrowRight, Lock } from "lucide-react";
 import ScrollReveal from "@/components/scroll-reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
-import { DEMO_ACCOUNTS, DEMO_PASSWORD } from "@/lib/api/auth";
-import { ROLE_LABELS } from "@/lib/rbac";
 
 const pillars = [
   {
@@ -44,7 +35,6 @@ export default function ManagementLandingPage() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [showDemo, setShowDemo] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -58,12 +48,6 @@ export default function ManagementLandingPage() {
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const fillDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword(DEMO_PASSWORD);
-    setError(null);
   };
 
   return (
@@ -180,43 +164,6 @@ export default function ManagementLandingPage() {
                 )}
               </Button>
             </form>
-
-            <div className="mt-6 border-t border-border pt-4">
-              <button
-                type="button"
-                onClick={() => setShowDemo((v) => !v)}
-                className="flex w-full items-center justify-between text-xs font-semibold uppercase tracking-wider text-muted-foreground hover:text-foreground transition-colors"
-              >
-                Demo accounts
-                <ChevronDown
-                  className={`h-4 w-4 transition-transform ${showDemo ? "rotate-180" : ""}`}
-                />
-              </button>
-              {showDemo && (
-                <div className="mt-3 space-y-1.5">
-                  <p className="text-[11px] text-muted-foreground mb-2">
-                    No live backend yet — pick a role to preview its dashboard.
-                    Shared password:{" "}
-                    <code className="text-foreground">{DEMO_PASSWORD}</code>
-                  </p>
-                  {DEMO_ACCOUNTS.map((account) => (
-                    <button
-                      key={account.email}
-                      type="button"
-                      onClick={() => fillDemo(account.email)}
-                      className="flex w-full items-center justify-between rounded-sm bg-muted/60 px-3 py-2 text-left text-xs hover:bg-muted transition-colors"
-                    >
-                      <span className="font-medium text-foreground">
-                        {account.email}
-                      </span>
-                      <span className="text-muted-foreground">
-                        {ROLE_LABELS[account.role]}
-                      </span>
-                    </button>
-                  ))}
-                </div>
-              )}
-            </div>
           </div>
         </ScrollReveal>
       </div>

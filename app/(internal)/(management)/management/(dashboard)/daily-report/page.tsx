@@ -7,7 +7,7 @@ import PageHeader from "@/components/management/page-header";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
-import { getTodayReport, listReports, submitReport } from "@/lib/api/daily-reports";
+import { getTodayReportForStaff, getMyReports, submitReport } from "@/lib/api/daily-reports";
 import type { DailyTaskReport } from "@/lib/api/types";
 import { formatDate } from "@/lib/utils";
 
@@ -21,10 +21,14 @@ export default function DailyReportPage() {
 
   const load = useCallback(async () => {
     if (!user) return;
-    const [record, all] = await Promise.all([getTodayReport(user.id), listReports(user.id)]);
-    setToday(record);
-    setHistory(all);
-    if (record) setContent(record.content);
+    try {
+      const [record, all] = await Promise.all([getTodayReportForStaff(), getMyReports()]);
+      setToday(record);
+      setHistory(all);
+      if (record) setContent(record.content);
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load reports.");
+    }
   }, [user]);
 
   useEffect(() => {
@@ -38,12 +42,12 @@ export default function DailyReportPage() {
     }
     setSaving(true);
     try {
-      await submitReport({ staffId: user.id, staffName: user.name, content: content.trim() });
+      await submitReport(content.trim());
       toast.success(today ? "Report updated." : "Report submitted.");
       setEditing(false);
       await load();
-    } catch {
-      toast.error("Could not submit report.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not submit report.");
     } finally {
       setSaving(false);
     }

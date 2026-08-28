@@ -27,34 +27,40 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogDescription,
 } from "@/components/ui/dialog";
-import { useAuth } from "@/contexts/auth-context";
 import {
-  listPosts,
+  listAllPosts,
   createPost,
   updatePost,
   setPostPublished,
   deletePost,
+  uploadPostCoverImage,
 } from "@/lib/api/blog";
 import type { BlogPost } from "@/lib/api/types";
 import { formatDate } from "@/lib/utils";
 
-const EMPTY_FORM = { title: "", excerpt: "", content: "", category: "", published: false };
+const EMPTY_FORM = { title: "", slug: "", content: "", published: false };
 
 export default function BlogPage() {
-  const { user } = useAuth();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [dialogOpen, setDialogOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [coverFile, setCoverFile] = useState<File | null>(null);
   const [saving, setSaving] = useState(false);
 
   const load = useCallback(async () => {
     setLoading(true);
-    setPosts(await listPosts());
-    setLoading(false);
+    try {
+      setPosts(await listAllPosts());
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not load posts.");
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
   useEffect(() => {
@@ -65,13 +71,15 @@ export default function BlogPage() {
     const q = search.trim().toLowerCase();
     if (!q) return posts;
     return posts.filter(
-      (p) => p.title.toLowerCase().includes(q) || p.category.toLowerCase().includes(q),
+      (p) =>
+        p.title.toLowerCase().includes(q) || p.slug.toLowerCase().includes(q),
     );
   }, [posts, search]);
 
   const openNew = () => {
     setEditingId(null);
     setForm(EMPTY_FORM);
+    setCoverFile(null);
     setDialogOpen(true);
   };
 
@@ -79,41 +87,42 @@ export default function BlogPage() {
     setEditingId(post.id);
     setForm({
       title: post.title,
-      excerpt: post.excerpt,
+      slug: post.slug,
       content: post.content,
-      category: post.category,
       published: post.published,
     });
+    setCoverFile(null);
     setDialogOpen(true);
   };
 
   const handleSave = async () => {
-    if (!form.title || !form.excerpt || !form.content || !user) {
-      toast.error("Title, excerpt and content are required.");
+    if (!form.title || !form.content) {
+      toast.error("Title and content are required.");
       return;
     }
     setSaving(true);
     try {
+      let postId = editingId;
       if (editingId) {
         await updatePost(editingId, {
           title: form.title,
-          excerpt: form.excerpt,
+          slug: form.slug,
           content: form.content,
-          category: form.category,
         });
         await setPostPublished(editingId, form.published);
         toast.success("Post updated.");
       } else {
-        await createPost({
+        const created = await createPost({
           title: form.title,
-          excerpt: form.excerpt,
+          slug: form.slug,
           content: form.content,
-          category: form.category || "General",
-          authorId: user.id,
-          authorName: user.name,
-          published: form.published,
         });
+        postId = created.id;
+        if (form.published) await setPostPublished(created.id, true);
         toast.success("Post created.");
+      }
+      if (coverFile && postId) {
+        await uploadPostCoverImage(postId, coverFile);
       }
       setDialogOpen(false);
       await load();
@@ -159,34 +168,45 @@ export default function BlogPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <StatCard label="Total Posts" value={posts.length} icon={<BookOpen className="h-6 w-6" />} />
-        <StatCard label="Published" value={publishedCount} variant="gold" icon={<BookOpen className="h-6 w-6" />} />
-        <StatCard label="Drafts" value={posts.length - publishedCount} icon={<BookOpen className="h-6 w-6" />} />
+        <StatCard
+          label="Total Posts"
+          value={posts.length}
+          icon={<BookOpen className="h-6 w-6" />}
+        />
+        <StatCard
+          label="Published"
+          value={publishedCount}
+          variant="gold"
+          icon={<BookOpen className="h-6 w-6" />}
+        />
+        <StatCard
+          label="Drafts"
+          value={posts.length - publishedCount}
+          icon={<BookOpen className="h-6 w-6" />}
+        />
       </div>
 
       <SearchFilterBar
         searchValue={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by title or category…"
+        searchPlaceholder="Search by title or slug…"
       />
 
       <DataTable>
         <DataTableHead>
           <DataTableHeadCell>Title</DataTableHeadCell>
-          <DataTableHeadCell>Author</DataTableHeadCell>
           <DataTableHeadCell align="center">Status</DataTableHeadCell>
           <DataTableHeadCell align="right">Published</DataTableHeadCell>
           <DataTableHeadCell align="right">Actions</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={5} />}
+          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={4} />}
           {filtered.map((post, idx) => (
             <DataTableRow key={post.id} index={idx}>
               <DataTableCell>
                 <p className="font-medium">{post.title}</p>
-                <p className="text-xs text-muted-foreground">{post.category}</p>
+                <p className="text-xs text-muted-foreground">/{post.slug}</p>
               </DataTableCell>
-              <DataTableCell>{post.authorName}</DataTableCell>
               <DataTableCell align="center">
                 <StatusBadge status={post.published ? "PUBLISHED" : "DRAFT"} />
               </DataTableCell>
@@ -195,13 +215,25 @@ export default function BlogPage() {
               </DataTableCell>
               <DataTableCell align="right">
                 <div className="flex justify-end gap-1">
-                  <Button size="sm" variant="ghost" onClick={() => handleTogglePublish(post)}>
+                  <Button
+                    size="sm"
+                    variant="ghost"
+                    onClick={() => handleTogglePublish(post)}
+                  >
                     {post.published ? "Unpublish" : "Publish"}
                   </Button>
-                  <Button size="icon-sm" variant="ghost" onClick={() => openEdit(post)}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => openEdit(post)}
+                  >
                     <Pencil className="h-4 w-4" />
                   </Button>
-                  <Button size="icon-sm" variant="ghost" onClick={() => handleDelete(post)}>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    onClick={() => handleDelete(post)}
+                  >
                     <Trash2 className="h-4 w-4 text-destructive" />
                   </Button>
                 </div>
@@ -212,6 +244,7 @@ export default function BlogPage() {
       </DataTable>
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
+        <DialogDescription className="invisible">Blog</DialogDescription>
         <DialogContent className="sm:max-w-xl">
           <DialogHeader>
             <DialogTitle>{editingId ? "Edit Post" : "New Post"}</DialogTitle>
@@ -219,22 +252,23 @@ export default function BlogPage() {
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label>Title</Label>
-              <Input value={form.title} onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))} />
-            </div>
-            <div className="grid gap-2">
-              <Label>Category</Label>
               <Input
-                value={form.category}
-                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
-                placeholder="Market Insights"
+                value={form.title}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, title: e.target.value }))
+                }
               />
             </div>
             <div className="grid gap-2">
-              <Label>Excerpt</Label>
-              <Textarea
-                rows={2}
-                value={form.excerpt}
-                onChange={(e) => setForm((f) => ({ ...f, excerpt: e.target.value }))}
+              <Label>
+                Slug (optional — auto-generated from title if left blank)
+              </Label>
+              <Input
+                value={form.slug}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, slug: e.target.value }))
+                }
+                placeholder="how-to-invest-in-property"
               />
             </div>
             <div className="grid gap-2">
@@ -242,19 +276,34 @@ export default function BlogPage() {
               <Textarea
                 rows={6}
                 value={form.content}
-                onChange={(e) => setForm((f) => ({ ...f, content: e.target.value }))}
+                onChange={(e) =>
+                  setForm((f) => ({ ...f, content: e.target.value }))
+                }
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Cover image (optional)</Label>
+              <input
+                type="file"
+                accept="image/*"
+                onChange={(e) => setCoverFile(e.target.files?.[0] ?? null)}
+                className="text-sm text-muted-foreground file:mr-3 file:rounded-md file:border-0 file:bg-muted file:px-3 file:py-1.5 file:text-sm file:font-medium file:text-foreground"
               />
             </div>
             <div className="flex items-center justify-between rounded-sm bg-muted/40 px-4 py-3">
               <div>
-                <p className="text-sm font-medium text-foreground">Publish immediately</p>
+                <p className="text-sm font-medium text-foreground">
+                  Publish immediately
+                </p>
                 <p className="text-xs text-muted-foreground">
                   Publishing shows this on the public blog right away.
                 </p>
               </div>
               <Switch
                 checked={form.published}
-                onCheckedChange={(v) => setForm((f) => ({ ...f, published: v }))}
+                onCheckedChange={(v) =>
+                  setForm((f) => ({ ...f, published: v }))
+                }
               />
             </div>
           </div>

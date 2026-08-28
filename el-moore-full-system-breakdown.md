@@ -20,13 +20,18 @@ Get a property listed → record when it's sold (outright or installment) → kn
 ## Properties
 
 - CRUD for property listings (name, location, price, status: available/reserved/sold)
+- Property images/gallery, with a designated cover photo
 - No public storefront yet — internal only
 
 ## Sales
 
 - Record a sale: property + buyer info + type (outright/installment) + salesperson or marketer
+- Buyer info stored as a proper customer record (linked across multiple purchases, powers birthday greetings and Customer Care lookups)
 - Outright: mark paid, done
 - Installment: simple payment schedule + log payments against it (even manually entered, no auto-reminders yet)
+- Document uploads for sales (contracts, ID, etc.)
+- Installment overdue flags / auto-reminders
+- Site inspection scheduling per customer/property, feeding the automated follow-up message
 
 ## Referrals
 
@@ -38,12 +43,14 @@ Get a property listed → record when it's sold (outright or installment) → kn
 
 - Clock in / clock out (button, timestamp — with geolocation yet)
 - End-of-day task report: just a text/textarea entry per day, nothing fancier
+- Geolocation/IP restriction on clock-in
 
 ## Admin Dashboard
 
 - Today's task reports feed
 - Properties sold list with buyer + amount + who sold it + commission
 - That's it — no charts yet, just tables
+- Dashboard charts and summaries (sales trends, commission totals, attendance %)
 
 ## Office Finance
 
@@ -62,6 +69,7 @@ Get a property listed → record when it's sold (outright or installment) → kn
 - Occasional celebration/notification emails
 - Automated Greetings: event-triggered emails for client birthdays and payment reminders
 - Automated WhatsApp messages for site inspection follow-ups
+- Notifications (email/SMS for payment due, commission paid)
 
 ## NEW — AI-Human Hybrid Care (Basic AI Chat Bot)
 
@@ -76,8 +84,7 @@ Get a property listed → record when it's sold (outright or installment) → kn
 - Marketer self-registration + login (Requires Approval)
 - Public storefront (Next.js, SSG'd property pages) with referral links (/refer/:marketerCode)
 - Finance transactions linked to sales automatically (a sale creates an income entry)
-- Installmental payment reminders for property sales / overdue flags
-- Dashboard charts and summaries (sales trends, commission totals, attendance %)
+- Customer-facing installment status view
 
 ## Phase 3 — polish
 
@@ -96,22 +103,28 @@ Get a property listed → record when it's sold (outright or installment) → kn
 
 **Week 2 — Sales & Referrals**
 - Sale recording (outright + installment), payment logging
+- Document uploads for sales (contracts, ID, etc.)
+- Installment overdue flags / auto-reminders
 - Referral/commission auto-generation, marketer commission list view
 
 **Week 3 — Staff Portal, Admin Dashboard, Office Finance**
 - Clock in/out, daily task report
-- Admin Dashboard: today's reports feed, sold properties list
+- Geolocation/IP restriction on clock-in
+- Admin Dashboard: today's reports feed, sold properties list, commission
+- Dashboard charts and summaries (sales trends, commission totals, attendance %)
 - Office Finance: manual income/expense log
 
 **Week 4 — Marketer Storefront (from Phase 2)**
 - Marketer self-registration with approval flow
 - Public storefront pages, referral links (/refer/:marketerCode)
 - Finance auto-linking from sales (income entry created automatically)
+- Customer-facing installment status view
 
 **Week 5 — Blog, Newsletter, AI Chat Bot**
 - Blog: create/edit/publish
 - Newsletter: bulk sending, celebration notifications
 - Automated Greetings: birthday + payment reminder emails, WhatsApp inspection follow-ups
+- Notifications (email/SMS for payment due, commission paid)
 - Basic AI Chat Bot with Customer Care handoff
 
 **Week 6 — Testing, Fixes, Launch Prep**
@@ -121,11 +134,3 @@ Get a property listed → record when it's sold (outright or installment) → kn
 - Go live
 
 **Rollover rule:** anything not finished at the end of its week carries into the next week's queue rather than blocking the schedule. Week 6 is the only buffer — if more than one feature spills into it, testing time shrinks accordingly.
-
-**Still deferred (Phase 3 — polish, post-launch):**
-- Geolocation/IP restriction on clock-in
-- Document uploads for sales (contracts, ID, etc.)
-- Customer-facing installment status view
-- Notifications (email/SMS for payment due, commission paid)
-- Installment overdue flags / auto-reminders (unless pulled forward in Week 4)
-- Dashboard charts and summaries

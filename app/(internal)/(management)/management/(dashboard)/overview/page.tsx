@@ -7,13 +7,21 @@ import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
 import { useAuth } from "@/contexts/auth-context";
 import { getPagesForRole } from "@/lib/rbac";
-import { listTodayReports } from "@/lib/api/daily-reports";
-import { listAttendance } from "@/lib/api/attendance";
+import { getTodayReports } from "@/lib/api/daily-reports";
+import { getAllAttendance } from "@/lib/api/attendance";
 import { listProperties } from "@/lib/api/properties";
 import { listReferrals, type ReferralWithSale } from "@/lib/api/referrals";
 import { listUsers } from "@/lib/api/users";
-import type { DailyTaskReport } from "@/lib/api/types";
+import type { AttendanceRecord, DailyTaskReport, Property } from "@/lib/api/types";
 import { formatCurrency } from "@/lib/utils";
+
+async function settle<T>(promise: Promise<T>, fallback: T): Promise<T> {
+  try {
+    return await promise;
+  } catch {
+    return fallback;
+  }
+}
 
 export default function OverviewPage() {
   const { user } = useAuth();
@@ -28,11 +36,11 @@ export default function OverviewPage() {
     let active = true;
     (async () => {
       const [todayReports, attendance, properties, referrals, users] = await Promise.all([
-        listTodayReports(),
-        listAttendance(),
-        listProperties(),
-        listReferrals(),
-        listUsers(),
+        settle<DailyTaskReport[]>(getTodayReports(), []),
+        settle<AttendanceRecord[]>(getAllAttendance(), []),
+        settle<Property[]>(listProperties(), []),
+        settle<ReferralWithSale[]>(listReferrals(), []),
+        settle(listUsers(), []),
       ]);
       if (!active) return;
       setReports(todayReports);
@@ -50,7 +58,7 @@ export default function OverviewPage() {
 
   if (!user) return null;
 
-  const isLeadership = user.role === "MD_GM" || user.role === "OFFICE_ADMIN";
+  const isLeadership = user.role === "MD" || user.role === "GM" || user.role === "OFFICE_ADMIN";
   const quickLinks = getPagesForRole(user.role).filter((p) => p.key !== "overview");
 
   return (
@@ -96,7 +104,9 @@ export default function OverviewPage() {
           sublabel={
             loading
               ? undefined
-              : formatCurrency(pendingCommissions.reduce((sum, r) => sum + r.commissionAmount, 0))
+              : formatCurrency(
+                  pendingCommissions.reduce((sum, r) => sum + Number(r.commissionAmount), 0),
+                )
           }
           icon={<Share2 className="h-6 w-6" />}
           variant="destructive"

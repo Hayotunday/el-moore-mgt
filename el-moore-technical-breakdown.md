@@ -68,7 +68,16 @@ el-moore-api/
 │       │   ├── properties.controller.ts
 │       │   ├── properties.service.ts
 │       │   ├── entities/
-│       │   │   └── property.entity.ts
+│       │   │   ├── property.entity.ts
+│       │   │   └── property-image.entity.ts
+│       │   └── dto/
+│       │
+│       ├── customers/
+│       │   ├── customers.module.ts
+│       │   ├── customers.controller.ts
+│       │   ├── customers.service.ts
+│       │   ├── entities/
+│       │   │   └── customer.entity.ts
 │       │   └── dto/
 │       │
 │       ├── sales/
@@ -80,6 +89,14 @@ el-moore-api/
 │       │   │   ├── installment-plan.entity.ts
 │       │   │   ├── installment-payment.entity.ts
 │       │   │   └── sale-document.entity.ts
+│       │   └── dto/
+│       │
+│       ├── site-inspections/
+│       │   ├── site-inspections.module.ts
+│       │   ├── site-inspections.controller.ts
+│       │   ├── site-inspections.service.ts
+│       │   ├── entities/
+│       │   │   └── site-inspection.entity.ts
 │       │   └── dto/
 │       │
 │       ├── referrals/
@@ -178,7 +195,7 @@ el-moore-api/
 | name | varchar | |
 | email | varchar, unique | |
 | password_hash | varchar | |
-| role | enum | MD_GM, OFFICE_ADMIN, SITE_COORDINATOR, TEAM_LEAD, ACCOUNTANT, CUSTOMER_CARE, MARKETER |
+| role | enum | BASIC, MD_GM, OFFICE_ADMIN, SITE_COORDINATOR, TEAM_LEAD, ACCOUNTANT, CUSTOMER_CARE, MARKETER — BASIC is default on self sign-up, no dashboard access until MD/GM assigns a real role |
 | team_lead_id | uuid, FK → users.id | nullable, self-referencing |
 | marketer_status | enum | nullable — PENDING / APPROVED / REJECTED (Phase 2 self-registration) |
 | created_at, updated_at | timestamp | |
@@ -193,12 +210,30 @@ el-moore-api/
 | status | enum | AVAILABLE, RESERVED, SOLD |
 | created_at, updated_at | timestamp | |
 
+**property_images**
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid, PK | |
+| property_id | uuid, FK → properties.id | |
+| image_url | varchar | S3/Spaces object |
+| is_primary | boolean | default false — used for thumbnail/cover selection |
+
+**customers**
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid, PK | |
+| full_name | varchar | |
+| phone | varchar, unique | |
+| email | varchar | nullable |
+| date_of_birth | date | nullable — powers birthday greetings |
+| created_at | timestamp | |
+
 **sales**
 | Column | Type | Notes |
 |---|---|---|
 | id | uuid, PK | |
 | property_id | uuid, FK → properties.id | |
-| buyer_name, buyer_phone, buyer_email | varchar | |
+| customer_id | uuid, FK → customers.id | |
 | sale_type | enum | OUTRIGHT, INSTALLMENT |
 | total_amount | decimal | |
 | sold_by_id | uuid, FK → users.id | nullable — internal staff |
@@ -231,6 +266,17 @@ el-moore-api/
 | file_url | varchar | points to S3/Spaces object |
 | document_type | enum | CONTRACT, ID, OTHER |
 | uploaded_at | timestamp | |
+
+**site_inspections**
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid, PK | |
+| customer_id | uuid, FK → customers.id | |
+| property_id | uuid, FK → properties.id | |
+| scheduled_by_id | uuid, FK → users.id | staff who booked it |
+| scheduled_at | timestamp | |
+| status | enum | SCHEDULED, COMPLETED, NO_SHOW, CANCELLED |
+| follow_up_sent | boolean | default false — flips once the WhatsApp follow-up cron picks it up |
 
 **referrals**
 | Column | Type | Notes |
@@ -300,6 +346,15 @@ el-moore-api/
 | sent_at | timestamp | nullable |
 | created_by_id | uuid, FK → users.id | |
 
+**newsletter_campaign_recipients**
+| Column | Type | Notes |
+|---|---|---|
+| id | uuid, PK | |
+| campaign_id | uuid, FK → newsletter_campaigns.id | |
+| subscriber_id | uuid, FK → newsletter_subscribers.id | |
+| status | enum | SENT, FAILED |
+| sent_at | timestamp | |
+
 **notification_log**
 | Column | Type | Notes |
 |---|---|---|
@@ -309,6 +364,7 @@ el-moore-api/
 | recipient | varchar | |
 | related_sale_id | uuid, FK → sales.id | nullable |
 | related_referral_id | uuid, FK → referrals.id | nullable |
+| customer_id | uuid, FK → customers.id | nullable — powers birthday sends independent of a sale |
 | status | enum | SENT, FAILED |
 | sent_at | timestamp | |
 
@@ -317,6 +373,7 @@ el-moore-api/
 |---|---|---|
 | id | uuid, PK | |
 | customer_identifier | varchar | phone/email/session id, no login required |
+| customer_id | uuid, FK → customers.id | nullable — linked once matched to a known customer |
 | status | enum | OPEN, HANDED_OFF, CLOSED |
 | assigned_to_id | uuid, FK → users.id | nullable — Customer Care once handed off |
 | created_at | timestamp | |
@@ -347,6 +404,12 @@ users (1) ──< (M) chatbot_conversations [assigned_to_id]
 users (1) ──< (M) users                [team_lead_id, self-referencing]
 
 properties (1) ──< (M) sales
+properties (1) ──< (M) property_images
+properties (1) ──< (M) site_inspections
+customers (1) ──< (M) sales
+customers (1) ──< (M) notification_log
+customers (1) ──< (M) site_inspections
+customers (1) ──< (M) chatbot_conversations
 
 sales (1) ──1── (1) installment_plans
 sales (1) ──< (M) sale_documents
@@ -358,9 +421,12 @@ installment_plans (1) ──< (M) installment_payments
 
 referrals (1) ──< (M) notification_log
 
+newsletter_campaigns (1) ──< (M) newsletter_campaign_recipients
+newsletter_subscribers (1) ──< (M) newsletter_campaign_recipients
+
 chatbot_conversations (1) ──< (M) chatbot_messages
 ```
 
 **Why `sales` is the hub:** it's the single table referenced by installments, referrals, finance, and notifications. Every downstream feature (commission tracking, income logging, payment reminders) reads from or writes to `sales` — which is why it was built in Week 2, right after auth and properties, before anything that depends on it.
 
-**Independent tables** (no dependency on `sales`, safe to build in parallel): `attendance`, `daily_task_reports`, `blog_posts`, `newsletter_subscribers`, `chatbot_conversations`/`chatbot_messages`.
+**Independent tables** (no dependency on `sales`, safe to build in parallel): `attendance`, `daily_task_reports`, `blog_posts`, `newsletter_subscribers`, `chatbot_conversations`/`chatbot_messages`, `site_inspections`, `property_images`.
