@@ -59,8 +59,53 @@ export async function listUnattributedSales(): Promise<SaleWithDetails[]> {
   return all.filter((s) => !s.marketerId);
 }
 
+/** OFFICE_ADMIN, TEAM_LEAD, or ACCOUNTANT. Installment sales past their expected payment
+ * date that aren't fully paid off yet. */
+export async function listOverdueSales(): Promise<Sale[]> {
+  return apiFetch<Sale[]>("/sales/overdue");
+}
+
+/**
+ * Not wired to any page yet — the Sales page currently composes its stats and tables
+ * from `listSales()` + client-side joins, which already works. This purpose-built
+ * endpoint could replace that, but its response shape isn't documented and hasn't been
+ * verified against a live authenticated call.
+ */
+export async function getSalesDashboard(params: {
+  saleType?: SaleType;
+  limit?: number;
+  offset?: number;
+}): Promise<unknown> {
+  const query = new URLSearchParams();
+  if (params.saleType) query.set("saleType", params.saleType);
+  if (params.limit) query.set("limit", String(params.limit));
+  if (params.offset) query.set("offset", String(params.offset));
+  const qs = query.toString();
+  return apiFetch(`/sales/dashboard${qs ? `?${qs}` : ""}`);
+}
+
 export async function getSale(id: string): Promise<Sale> {
   return apiFetch<Sale>(`/sales/${id}`);
+}
+
+/** TEAM_LEAD or OFFICE_ADMIN. Updates buyer info, sale type, amount, or assigned staff. */
+export async function updateSale(
+  id: string,
+  input: Partial<{
+    buyerName: string;
+    buyerPhone: string;
+    buyerEmail: string;
+    saleType: SaleType;
+    totalAmount: string;
+    soldById: string;
+  }>,
+): Promise<Sale> {
+  return apiFetch<Sale>(`/sales/${id}`, { method: "PATCH", body: JSON.stringify(input) });
+}
+
+/** OFFICE_ADMIN only. Voids the sale and releases the property back to AVAILABLE. */
+export async function voidSale(id: string): Promise<void> {
+  await apiFetch<void>(`/sales/${id}`, { method: "DELETE" });
 }
 
 /**

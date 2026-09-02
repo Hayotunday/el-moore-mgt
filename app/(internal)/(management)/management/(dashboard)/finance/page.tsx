@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { DollarSign, TrendingUp, TrendingDown, Plus } from "lucide-react";
+import { DollarSign, TrendingUp, TrendingDown, Plus, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
@@ -34,9 +34,11 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { listTransactions, createTransaction } from "@/lib/api/finance";
+import { listTransactions, createTransaction, updateTransaction, deleteTransaction } from "@/lib/api/finance";
 import type { FinancialTransaction, TransactionType } from "@/lib/api/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
+
+const EMPTY_FORM = { type: "EXPENSE" as TransactionType, category: "", amount: "", note: "" };
 
 export default function FinancePage() {
   const [transactions, setTransactions] = useState<FinancialTransaction[]>([]);
@@ -44,13 +46,10 @@ export default function FinancePage() {
   const [search, setSearch] = useState("");
   const [typeFilter, setTypeFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    type: "EXPENSE" as TransactionType,
-    category: "",
-    amount: "",
-    note: "",
-  });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -58,14 +57,11 @@ export default function FinancePage() {
       setTransactions(
         await listTransactions({
           search: search || undefined,
-          type:
-            typeFilter === "all" ? undefined : (typeFilter as TransactionType),
+          type: typeFilter === "all" ? undefined : (typeFilter as TransactionType),
         }),
       );
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not load transactions.",
-      );
+      toast.error(err instanceof Error ? err.message : "Could not load transactions.");
     } finally {
       setLoading(false);
     }
@@ -75,37 +71,67 @@ export default function FinancePage() {
     load();
   }, [load]);
 
-  const totalIncome = transactions
-    .filter((t) => t.type === "INCOME")
-    .reduce((s, t) => s + Number(t.amount), 0);
-  const totalExpense = transactions
-    .filter((t) => t.type === "EXPENSE")
-    .reduce((s, t) => s + Number(t.amount), 0);
+  const totalIncome = transactions.filter((t) => t.type === "INCOME").reduce((s, t) => s + Number(t.amount), 0);
+  const totalExpense = transactions.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + Number(t.amount), 0);
 
-  const handleCreate = async () => {
+  const openNew = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (t: FinancialTransaction) => {
+    setEditingId(t.id);
+    setForm({ type: t.type, category: t.category, amount: t.amount, note: t.note ?? "" });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!form.category || !form.amount) {
       toast.error("Category and amount are required.");
       return;
     }
     setSaving(true);
     try {
-      await createTransaction({
-        type: form.type,
-        category: form.category,
-        amount: form.amount,
-        date: new Date().toISOString().slice(0, 10),
-        note: form.note || undefined,
-      });
-      toast.success("Transaction recorded.");
+      if (editingId) {
+        await updateTransaction(editingId, {
+          type: form.type,
+          category: form.category,
+          amount: form.amount,
+          note: form.note || undefined,
+        });
+        toast.success("Transaction updated.");
+      } else {
+        await createTransaction({
+          type: form.type,
+          category: form.category,
+          amount: form.amount,
+          date: new Date().toISOString().slice(0, 10),
+          note: form.note || undefined,
+        });
+        toast.success("Transaction recorded.");
+      }
       setDialogOpen(false);
-      setForm({ type: "EXPENSE", category: "", amount: "", note: "" });
+      setForm(EMPTY_FORM);
       await load();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not record transaction.",
-      );
+      toast.error(err instanceof Error ? err.message : "Could not save transaction.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (t: FinancialTransaction) => {
+    if (!window.confirm(`Delete this ${t.category} transaction? This can't be undone.`)) return;
+    setDeletingId(t.id);
+    try {
+      await deleteTransaction(t.id);
+      toast.success("Transaction deleted.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete transaction.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -115,31 +141,16 @@ export default function FinancePage() {
         title="Office Finance"
         subtitle="Every income and expense entry, in one ledger."
         action={
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={openNew}>
             <Plus className="h-4 w-4" /> Add Transaction
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <StatCard
-          label="Total Income"
-          value={formatCurrency(totalIncome)}
-          icon={<TrendingUp className="h-6 w-6" />}
-          variant="success"
-        />
-        <StatCard
-          label="Total Expenses"
-          value={formatCurrency(totalExpense)}
-          icon={<TrendingDown className="h-6 w-6" />}
-          variant="destructive"
-        />
-        <StatCard
-          label="Net Balance"
-          value={formatCurrency(totalIncome - totalExpense)}
-          icon={<DollarSign className="h-6 w-6" />}
-          variant="gold"
-        />
+        <StatCard label="Total Income" value={formatCurrency(totalIncome)} icon={<TrendingUp className="h-6 w-6" />} variant="success" />
+        <StatCard label="Total Expenses" value={formatCurrency(totalExpense)} icon={<TrendingDown className="h-6 w-6" />} variant="destructive" />
+        <StatCard label="Net Balance" value={formatCurrency(totalIncome - totalExpense)} icon={<DollarSign className="h-6 w-6" />} variant="gold" />
       </div>
 
       <SearchFilterBar
@@ -166,34 +177,40 @@ export default function FinancePage() {
           <DataTableHeadCell>Category</DataTableHeadCell>
           <DataTableHeadCell align="center">Type</DataTableHeadCell>
           <DataTableHeadCell align="right">Amount</DataTableHeadCell>
+          <DataTableHeadCell align="right">Actions</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && transactions.length === 0 && (
-            <DataTableEmpty colSpan={5} />
-          )}
+          {!loading && transactions.length === 0 && <DataTableEmpty colSpan={5} />}
           {transactions.map((t, idx) => (
             <DataTableRow key={t.id} index={idx}>
               <DataTableCell>{formatDate(t.date)}</DataTableCell>
               <DataTableCell>
                 <p className="font-medium">{t.category}</p>
-                {t.note && (
-                  <p className="text-xs text-muted-foreground">{t.note}</p>
-                )}
+                {t.note && <p className="text-xs text-muted-foreground">{t.note}</p>}
               </DataTableCell>
               <DataTableCell align="center">
                 <StatusBadge status={t.type} />
               </DataTableCell>
               <DataTableCell align="right">
-                <span
-                  className={
-                    t.type === "INCOME"
-                      ? "text-emerald-700 font-semibold"
-                      : "text-destructive font-semibold"
-                  }
-                >
+                <span className={t.type === "INCOME" ? "text-emerald-700 font-semibold" : "text-destructive font-semibold"}>
                   {t.type === "INCOME" ? "+" : "-"}
                   {formatCurrency(t.amount)}
                 </span>
+              </DataTableCell>
+              <DataTableCell align="right">
+                <div className="flex justify-end gap-1">
+                  <Button size="icon-sm" variant="ghost" onClick={() => openEdit(t)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    disabled={deletingId === t.id}
+                    onClick={() => handleDelete(t)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </DataTableCell>
             </DataTableRow>
           ))}
@@ -204,17 +221,12 @@ export default function FinancePage() {
         <DialogDescription className="invisible">Finance</DialogDescription>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Add Transaction</DialogTitle>
+            <DialogTitle>{editingId ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label>Type</Label>
-              <Select
-                value={form.type}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, type: v as TransactionType }))
-                }
-              >
+              <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as TransactionType }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -228,9 +240,7 @@ export default function FinancePage() {
               <Label>Category</Label>
               <Input
                 value={form.category}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, category: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, category: e.target.value }))}
                 placeholder="Office Utilities"
               />
             </div>
@@ -239,28 +249,21 @@ export default function FinancePage() {
               <Input
                 type="number"
                 value={form.amount}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, amount: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, amount: e.target.value }))}
                 placeholder="850000"
               />
             </div>
             <div className="grid gap-2">
               <Label>Note (optional)</Label>
-              <Input
-                value={form.note}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, note: e.target.value }))
-                }
-              />
+              <Input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving ? "Saving…" : "Add Transaction"}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving…" : editingId ? "Save Changes" : "Add Transaction"}
             </Button>
           </DialogFooter>
         </DialogContent>

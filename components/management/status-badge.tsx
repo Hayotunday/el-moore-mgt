@@ -22,6 +22,10 @@ const STATUS_VARIANTS: Record<string, NonNullable<BadgeProps["variant"]>> = {
   COMPLETED: "success",
   NO_SHOW: "destructive",
   CANCELLED: "neutral",
+  INACTIVE: "neutral",
+  CLAIMED: "success",
+  EXPIRED: "destructive",
+  REVOKED: "neutral",
 };
 
 export default function StatusBadge({ status }: { status: string }) {

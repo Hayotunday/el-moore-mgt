@@ -20,6 +20,28 @@ export async function listProperties(status?: PropertyStatus): Promise<Property[
   return apiFetch<Property[]>(`/properties${toQueryString({ status })}`);
 }
 
+/**
+ * Not wired to any page yet — the Properties page currently composes its stats and table
+ * from `listProperties()` + `joinSaleToProperties()`, which already works. This
+ * purpose-built endpoint could replace that, but its response shape isn't documented and
+ * hasn't been verified against a live authenticated call.
+ */
+export async function getPropertiesDashboard(params: {
+  search?: string;
+  status?: PropertyStatus;
+  limit?: number;
+  offset?: number;
+}): Promise<unknown> {
+  return apiFetch(
+    `/properties/dashboard${toQueryString({
+      search: params.search,
+      status: params.status,
+      limit: params.limit ? String(params.limit) : undefined,
+      offset: params.offset ? String(params.offset) : undefined,
+    })}`,
+  );
+}
+
 export async function listPublicProperties(): Promise<Property[]> {
   return apiFetch<Property[]>("/properties/public");
 }

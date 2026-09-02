@@ -5,6 +5,29 @@ export async function listUsers(role?: Role): Promise<ManagementUser[]> {
   return apiFetch<ManagementUser[]>(`/users${toQueryString({ role })}`);
 }
 
+/**
+ * Not wired to any page yet — the Users & Roles page currently composes its stats and
+ * table from `listUsers()` client-side, which already works. This purpose-built endpoint
+ * could replace that, but its exact response shape isn't documented and hasn't been
+ * verified against a live authenticated call, so swapping it in is left for later rather
+ * than guessed at.
+ */
+export async function getUsersDashboard(params: {
+  search?: string;
+  role?: Role;
+  limit?: number;
+  offset?: number;
+}): Promise<unknown> {
+  return apiFetch(
+    `/users/dashboard${toQueryString({
+      search: params.search,
+      role: params.role,
+      limit: params.limit ? String(params.limit) : undefined,
+      offset: params.offset ? String(params.offset) : undefined,
+    })}`,
+  );
+}
+
 export async function getUser(id: string): Promise<ManagementUser> {
   return apiFetch<ManagementUser>(`/users/${id}`);
 }

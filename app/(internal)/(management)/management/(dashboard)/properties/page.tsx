@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Plus, Building2 } from "lucide-react";
+import { Plus, Building2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
@@ -37,6 +37,8 @@ import {
 import {
   listProperties,
   createProperty,
+  updateProperty,
+  deleteProperty,
   joinSaleToProperties,
   type PropertyWithSale,
 } from "@/lib/api/properties";
@@ -44,32 +46,26 @@ import { listSales } from "@/lib/api/sales";
 import type { PropertyStatus } from "@/lib/api/types";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
+const EMPTY_FORM = { title: "", location: "", price: "", status: "AVAILABLE" as PropertyStatus };
+
 export default function PropertiesPage() {
   const [loading, setLoading] = useState(true);
   const [properties, setProperties] = useState<PropertyWithSale[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [dialogOpen, setDialogOpen] = useState(false);
+  const [editingId, setEditingId] = useState<string | null>(null);
   const [saving, setSaving] = useState(false);
-  const [form, setForm] = useState({
-    title: "",
-    location: "",
-    price: "",
-    status: "AVAILABLE" as PropertyStatus,
-  });
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+  const [form, setForm] = useState(EMPTY_FORM);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [propertyList, saleList] = await Promise.all([
-        listProperties(),
-        listSales(),
-      ]);
+      const [propertyList, saleList] = await Promise.all([listProperties(), listSales()]);
       setProperties(joinSaleToProperties(propertyList, saleList));
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not load properties.",
-      );
+      toast.error(err instanceof Error ? err.message : "Could not load properties.");
     } finally {
       setLoading(false);
     }
@@ -83,11 +79,7 @@ export default function PropertiesPage() {
     const q = search.trim().toLowerCase();
     return properties.filter((p) => {
       if (statusFilter !== "all" && p.status !== statusFilter) return false;
-      if (
-        q &&
-        !p.title.toLowerCase().includes(q) &&
-        !p.location.toLowerCase().includes(q)
-      ) {
+      if (q && !p.title.toLowerCase().includes(q) && !p.location.toLowerCase().includes(q)) {
         return false;
       }
       return true;
@@ -97,29 +89,58 @@ export default function PropertiesPage() {
   const totalValue = properties.reduce((sum, p) => sum + Number(p.price), 0);
   const soldCount = properties.filter((p) => p.status === "SOLD").length;
 
-  const handleCreate = async () => {
+  const openNew = () => {
+    setEditingId(null);
+    setForm(EMPTY_FORM);
+    setDialogOpen(true);
+  };
+
+  const openEdit = (property: PropertyWithSale) => {
+    setEditingId(property.id);
+    setForm({
+      title: property.title,
+      location: property.location,
+      price: property.price,
+      status: property.status,
+    });
+    setDialogOpen(true);
+  };
+
+  const handleSave = async () => {
     if (!form.title || !form.location || !form.price) {
       toast.error("Title, location and price are required.");
       return;
     }
     setSaving(true);
     try {
-      await createProperty({
-        title: form.title,
-        location: form.location,
-        price: form.price,
-        status: form.status,
-      });
-      toast.success("Property added to inventory.");
+      if (editingId) {
+        await updateProperty(editingId, form);
+        toast.success("Property updated.");
+      } else {
+        await createProperty(form);
+        toast.success("Property added to inventory.");
+      }
       setDialogOpen(false);
-      setForm({ title: "", location: "", price: "", status: "AVAILABLE" });
+      setForm(EMPTY_FORM);
       await load();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not add property.",
-      );
+      toast.error(err instanceof Error ? err.message : "Could not save property.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleDelete = async (property: PropertyWithSale) => {
+    if (!window.confirm(`Delete "${property.title}"? This can't be undone.`)) return;
+    setDeletingId(property.id);
+    try {
+      await deleteProperty(property.id);
+      toast.success("Property deleted.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not delete property.");
+    } finally {
+      setDeletingId(null);
     }
   };
 
@@ -129,24 +150,15 @@ export default function PropertiesPage() {
         title="Property Documents"
         subtitle="Every listing, its current status, and who bought it when sold."
         action={
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button onClick={openNew}>
             <Plus className="h-4 w-4" /> Add Property
           </Button>
         }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <StatCard
-          label="Total Properties"
-          value={properties.length}
-          icon={<Building2 className="h-6 w-6" />}
-        />
-        <StatCard
-          label="Sold"
-          value={soldCount}
-          variant="gold"
-          icon={<Building2 className="h-6 w-6" />}
-        />
+        <StatCard label="Total Properties" value={properties.length} icon={<Building2 className="h-6 w-6" />} />
+        <StatCard label="Sold" value={soldCount} variant="gold" icon={<Building2 className="h-6 w-6" />} />
         <StatCard
           label="Total Portfolio Value"
           value={formatCurrency(totalValue)}
@@ -179,20 +191,17 @@ export default function PropertiesPage() {
           <DataTableHeadCell align="right">Price</DataTableHeadCell>
           <DataTableHeadCell align="center">Status</DataTableHeadCell>
           <DataTableHeadCell>Buyer</DataTableHeadCell>
+          <DataTableHeadCell align="right">Actions</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={4} />}
+          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={5} />}
           {filtered.map((property, idx) => (
             <DataTableRow key={property.id} index={idx}>
               <DataTableCell>
                 <p className="font-medium">{property.title}</p>
-                <p className="text-xs text-muted-foreground">
-                  {property.location}
-                </p>
+                <p className="text-xs text-muted-foreground">{property.location}</p>
               </DataTableCell>
-              <DataTableCell align="right">
-                {formatCurrency(property.price)}
-              </DataTableCell>
+              <DataTableCell align="right">{formatCurrency(property.price)}</DataTableCell>
               <DataTableCell align="center">
                 <StatusBadge status={property.status} />
               </DataTableCell>
@@ -201,15 +210,28 @@ export default function PropertiesPage() {
                   <div>
                     <p className="font-medium">{property.sale.buyerName}</p>
                     <p className="text-xs text-muted-foreground">
-                      {property.sale.saleType === "OUTRIGHT"
-                        ? "Outright"
-                        : "Installment"}{" "}
-                      · {formatDate(property.sale.createdAt)}
+                      {property.sale.saleType === "OUTRIGHT" ? "Outright" : "Installment"} ·{" "}
+                      {formatDate(property.sale.createdAt)}
                     </p>
                   </div>
                 ) : (
                   <span className="text-muted-foreground">—</span>
                 )}
+              </DataTableCell>
+              <DataTableCell align="right">
+                <div className="flex justify-end gap-1">
+                  <Button size="icon-sm" variant="ghost" onClick={() => openEdit(property)}>
+                    <Pencil className="h-4 w-4" />
+                  </Button>
+                  <Button
+                    size="icon-sm"
+                    variant="ghost"
+                    disabled={deletingId === property.id}
+                    onClick={() => handleDelete(property)}
+                  >
+                    <Trash2 className="h-4 w-4 text-destructive" />
+                  </Button>
+                </div>
               </DataTableCell>
             </DataTableRow>
           ))}
@@ -220,16 +242,14 @@ export default function PropertiesPage() {
         <DialogDescription className="invisible">Properties</DialogDescription>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
-            <DialogTitle>Add Property</DialogTitle>
+            <DialogTitle>{editingId ? "Edit Property" : "Add Property"}</DialogTitle>
           </DialogHeader>
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label>Title</Label>
               <Input
                 value={form.title}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, title: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
                 placeholder="4-Bed Terrace Duplex, Gwarinpa"
               />
             </div>
@@ -237,9 +257,7 @@ export default function PropertiesPage() {
               <Label>Location</Label>
               <Input
                 value={form.location}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, location: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, location: e.target.value }))}
                 placeholder="Abuja - Gwarinpa"
               />
             </div>
@@ -248,9 +266,7 @@ export default function PropertiesPage() {
                 <Label>Status</Label>
                 <Select
                   value={form.status}
-                  onValueChange={(v) =>
-                    setForm((f) => ({ ...f, status: v as PropertyStatus }))
-                  }
+                  onValueChange={(v) => setForm((f) => ({ ...f, status: v as PropertyStatus }))}
                 >
                   <SelectTrigger>
                     <SelectValue />
@@ -267,9 +283,7 @@ export default function PropertiesPage() {
                 <Input
                   type="number"
                   value={form.price}
-                  onChange={(e) =>
-                    setForm((f) => ({ ...f, price: e.target.value }))
-                  }
+                  onChange={(e) => setForm((f) => ({ ...f, price: e.target.value }))}
                   placeholder="220000000"
                 />
               </div>
@@ -279,8 +293,8 @@ export default function PropertiesPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleCreate} disabled={saving}>
-              {saving ? "Saving…" : "Add Property"}
+            <Button onClick={handleSave} disabled={saving}>
+              {saving ? "Saving…" : editingId ? "Save Changes" : "Add Property"}
             </Button>
           </DialogFooter>
         </DialogContent>

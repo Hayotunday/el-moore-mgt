@@ -37,8 +37,10 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import {
   listSales,
+  listOverdueSales,
   addInstallmentPayment,
   createSale,
+  voidSale,
   type SaleWithDetails,
 } from "@/lib/api/sales";
 import { listProperties } from "@/lib/api/properties";
@@ -82,10 +84,12 @@ function SalesPageContent() {
     [],
   );
   const [staff, setStaff] = useState<ManagementUser[]>([]);
+  const [overdueCount, setOverdueCount] = useState(0);
 
   const [paymentSale, setPaymentSale] = useState<SaleWithDetails | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [saving, setSaving] = useState(false);
+  const [voidingId, setVoidingId] = useState<string | null>(null);
 
   const [saleDialogOpen, setSaleDialogOpen] = useState(false);
   const [saleForm, setSaleForm] = useState(EMPTY_SALE_FORM);
@@ -104,6 +108,11 @@ function SalesPageContent() {
       setOutrightSales(outright);
       setAvailableProperties(properties);
       setStaff(users);
+      try {
+        setOverdueCount((await listOverdueSales()).length);
+      } catch {
+        // role-gated the same as the list above; ignore if the caller can't see it
+      }
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load sales.");
     } finally {
@@ -187,6 +196,20 @@ function SalesPageContent() {
     }
   };
 
+  const handleVoid = async (saleId: string) => {
+    if (!window.confirm("Void this sale? The property returns to Available.")) return;
+    setVoidingId(saleId);
+    try {
+      await voidSale(saleId);
+      toast.success("Sale voided.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not void sale.");
+    } finally {
+      setVoidingId(null);
+    }
+  };
+
   const totalOutright = outrightSales.reduce(
     (sum, s) => sum + Number(s.totalAmount),
     0,
@@ -212,7 +235,7 @@ function SalesPageContent() {
         }
       />
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           label="Outright Sales"
           value={outrightSales.length}
@@ -230,6 +253,13 @@ function SalesPageContent() {
           label="Outstanding Balance"
           value={formatCurrency(totalOutstanding)}
           sublabel="Across installment plans"
+          icon={<Wallet className="h-6 w-6" />}
+          variant="destructive"
+        />
+        <StatCard
+          label="Overdue Installments"
+          value={overdueCount}
+          sublabel="Past expected payment date"
           icon={<Wallet className="h-6 w-6" />}
           variant="destructive"
         />
@@ -287,13 +317,24 @@ function SalesPageContent() {
                     </span>
                   </DataTableCell>
                   <DataTableCell align="center">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      onClick={() => setPaymentSale(sale)}
-                    >
-                      Log Payment
-                    </Button>
+                    <div className="flex justify-center gap-1">
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() => setPaymentSale(sale)}
+                      >
+                        Log Payment
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        className="text-destructive hover:text-destructive"
+                        disabled={voidingId === sale.id}
+                        onClick={() => handleVoid(sale.id)}
+                      >
+                        Void
+                      </Button>
+                    </div>
                   </DataTableCell>
                 </DataTableRow>
               ))}
@@ -309,10 +350,11 @@ function SalesPageContent() {
               <DataTableHeadCell align="right">Amount</DataTableHeadCell>
               <DataTableHeadCell>Sold By</DataTableHeadCell>
               <DataTableHeadCell>Marketer</DataTableHeadCell>
+              <DataTableHeadCell align="center">Action</DataTableHeadCell>
             </DataTableHead>
             <DataTableBody>
               {!loading && outrightSales.length === 0 && (
-                <DataTableEmpty colSpan={5} />
+                <DataTableEmpty colSpan={6} />
               )}
               {outrightSales.map((sale, idx) => (
                 <DataTableRow key={sale.id} index={idx}>
@@ -337,6 +379,17 @@ function SalesPageContent() {
                       : "—"}
                   </DataTableCell>
                   <DataTableCell>{sale.marketerId ?? "—"}</DataTableCell>
+                  <DataTableCell align="center">
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      className="text-destructive hover:text-destructive"
+                      disabled={voidingId === sale.id}
+                      onClick={() => handleVoid(sale.id)}
+                    >
+                      Void
+                    </Button>
+                  </DataTableCell>
                 </DataTableRow>
               ))}
             </DataTableBody>

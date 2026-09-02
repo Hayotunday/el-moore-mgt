@@ -207,25 +207,33 @@ export interface Customer {
   createdAt?: string;
 }
 
-// ── Mock-only concepts ──────────────────────────────────────────────────
-// The live backend has no endpoint for these yet — they stay backed entirely by
-// lib/api/mock-store.ts regardless of NEXT_PUBLIC_API_BASE_URL. Shape follows the
-// `site_inspections` table added to el-moore-technical-breakdown.md — not deployed
-// yet, but matching it now keeps the eventual swap-over a drop-in.
 export type InspectionStatus = "SCHEDULED" | "COMPLETED" | "NO_SHOW" | "CANCELLED";
 
-export interface InspectionRequest {
+export interface SiteInspection {
   id: string;
-  customerId: string;
+  customerId?: string | null;
   propertyId: string;
-  scheduledById: string;
   scheduledAt: string;
+  inspectorId?: string | null;
   status: InspectionStatus;
-  followUpSent: boolean;
+  notes?: string | null;
+  followUpSent?: boolean;
 }
 
 export interface AutomatedGreetingSettings {
   birthday: boolean;
   paymentReminder: boolean;
   inspectionFollowup: boolean;
+}
+
+export type InviteStatus = "PENDING" | "CLAIMED" | "EXPIRED" | "REVOKED";
+
+export interface Invite {
+  id: string;
+  email: string;
+  name: string;
+  role: Role;
+  status?: InviteStatus;
+  expiresAt?: string;
+  createdAt?: string;
 }

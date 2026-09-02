@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { UserCog, Plus } from "lucide-react";
+import { UserCog, Plus, UserX, Send, RotateCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
+import StatusBadge from "@/components/management/status-badge";
 import SearchFilterBar from "@/components/management/search-filter-bar";
 import {
   DataTable,
@@ -33,26 +34,31 @@ import {
   DialogFooter,
   DialogDescription,
 } from "@/components/ui/dialog";
-import { listUsers, assignUserRole, createUser } from "@/lib/api/users";
-import type { ManagementUser } from "@/lib/api/types";
+import { listUsers, assignUserRole, createUser, deactivateUser } from "@/lib/api/users";
+import { sendInvite, listMyInvites, resendInvite, revokeInvite } from "@/lib/api/invites";
+import type { Invite, ManagementUser } from "@/lib/api/types";
 import { MANAGEMENT_ROLES, ROLE_LABELS, type Role } from "@/lib/rbac";
 import { formatDate } from "@/lib/utils";
 
-const EMPTY_FORM = {
-  name: "",
-  email: "",
-  password: "",
-  role: "SITE_COORDINATOR" as Role,
-};
+const EMPTY_FORM = { name: "", email: "", password: "", role: "SITE_COORDINATOR" as Role };
+const EMPTY_INVITE_FORM = { name: "", email: "", role: "SITE_COORDINATOR" as Role };
 
 export default function UsersPage() {
   const [users, setUsers] = useState<ManagementUser[]>([]);
+  const [invites, setInvites] = useState<Invite[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState("all");
+  const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
+
+  const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
+  const [sendingInvite, setSendingInvite] = useState(false);
+  const [inviteForm, setInviteForm] = useState(EMPTY_INVITE_FORM);
+  const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -62,6 +68,11 @@ export default function UsersPage() {
       toast.error(err instanceof Error ? err.message : "Could not load users.");
     } finally {
       setLoading(false);
+    }
+    try {
+      setInvites(await listMyInvites());
+    } catch {
+      // MD/GM only — silently skip for other roles
     }
   }, []);
 
@@ -73,12 +84,7 @@ export default function UsersPage() {
     const q = search.trim().toLowerCase();
     return users.filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
-      if (
-        q &&
-        !u.name.toLowerCase().includes(q) &&
-        !u.email.toLowerCase().includes(q)
-      )
-        return false;
+      if (q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [users, search, roleFilter]);
@@ -89,13 +95,25 @@ export default function UsersPage() {
       toast.success("Role updated.");
       await load();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not update role.",
-      );
+      toast.error(err instanceof Error ? err.message : "Could not update role.");
     }
   };
 
-  const handleInvite = async () => {
+  const handleDeactivate = async (user: ManagementUser) => {
+    if (!window.confirm(`Deactivate ${user.name}? They won't be able to log in.`)) return;
+    setDeactivatingId(user.id);
+    try {
+      await deactivateUser(user.id);
+      toast.success("User deactivated.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not deactivate user.");
+    } finally {
+      setDeactivatingId(null);
+    }
+  };
+
+  const handleCreate = async () => {
     if (!form.name || !form.email || !form.password) {
       toast.error("Name, email and a starting password are required.");
       return;
@@ -108,11 +126,55 @@ export default function UsersPage() {
       setForm(EMPTY_FORM);
       await load();
     } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Could not create user.",
-      );
+      toast.error(err instanceof Error ? err.message : "Could not create user.");
     } finally {
       setSaving(false);
+    }
+  };
+
+  const handleSendInvite = async () => {
+    if (!inviteForm.name || !inviteForm.email) {
+      toast.error("Name and email are required.");
+      return;
+    }
+    setSendingInvite(true);
+    try {
+      await sendInvite(inviteForm);
+      toast.success("Invite sent.");
+      setInviteDialogOpen(false);
+      setInviteForm(EMPTY_INVITE_FORM);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not send invite.");
+    } finally {
+      setSendingInvite(false);
+    }
+  };
+
+  const handleResendInvite = async (invite: Invite) => {
+    setInviteBusyId(invite.id);
+    try {
+      await resendInvite(invite.id);
+      toast.success("Invite resent.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resend invite.");
+    } finally {
+      setInviteBusyId(null);
+    }
+  };
+
+  const handleRevokeInvite = async (invite: Invite) => {
+    if (!window.confirm(`Revoke the invite to ${invite.email}?`)) return;
+    setInviteBusyId(invite.id);
+    try {
+      await revokeInvite(invite.id);
+      toast.success("Invite revoked.");
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not revoke invite.");
+    } finally {
+      setInviteBusyId(null);
     }
   };
 
@@ -122,29 +184,26 @@ export default function UsersPage() {
         title="Users & Roles"
         subtitle="Everyone with access to the management side of El-Moore, and what they can see."
         action={
-          <Button onClick={() => setDialogOpen(true)}>
-            <Plus className="h-4 w-4" /> Add User
-          </Button>
+          <div className="flex gap-2">
+            <Button variant="outline" onClick={() => setInviteDialogOpen(true)}>
+              <Send className="h-4 w-4" /> Send Invite
+            </Button>
+            <Button onClick={() => setDialogOpen(true)}>
+              <Plus className="h-4 w-4" /> Add User
+            </Button>
+          </div>
         }
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <StatCard
-          label="Total Users"
-          value={users.length}
-          icon={<UserCog className="h-6 w-6" />}
-        />
+        <StatCard label="Total Users" value={users.length} icon={<UserCog className="h-6 w-6" />} />
         <StatCard
           label="Leadership"
           value={users.filter((u) => u.role === "MD" || u.role === "GM").length}
           variant="gold"
           icon={<UserCog className="h-6 w-6" />}
         />
-        <StatCard
-          label="Roles In Use"
-          value={MANAGEMENT_ROLES.length}
-          icon={<UserCog className="h-6 w-6" />}
-        />
+        <StatCard label="Roles In Use" value={MANAGEMENT_ROLES.length} icon={<UserCog className="h-6 w-6" />} />
       </div>
 
       <SearchFilterBar
@@ -157,10 +216,7 @@ export default function UsersPage() {
             label: "Role",
             value: roleFilter,
             onChange: setRoleFilter,
-            options: MANAGEMENT_ROLES.map((r) => ({
-              label: ROLE_LABELS[r],
-              value: r,
-            })),
+            options: MANAGEMENT_ROLES.map((r) => ({ label: ROLE_LABELS[r], value: r })),
           },
         ]}
       />
@@ -170,19 +226,18 @@ export default function UsersPage() {
           <DataTableHeadCell>Name</DataTableHeadCell>
           <DataTableHeadCell>Email</DataTableHeadCell>
           <DataTableHeadCell>Role</DataTableHeadCell>
+          <DataTableHeadCell align="center">Status</DataTableHeadCell>
           <DataTableHeadCell align="right">Joined</DataTableHeadCell>
+          <DataTableHeadCell align="right">Actions</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={4} />}
+          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={6} />}
           {filtered.map((u, idx) => (
             <DataTableRow key={u.id} index={idx}>
               <DataTableCell className="font-medium">{u.name}</DataTableCell>
               <DataTableCell>{u.email}</DataTableCell>
               <DataTableCell>
-                <Select
-                  value={u.role}
-                  onValueChange={(v) => handleRoleChange(u.id, v as Role)}
-                >
+                <Select value={u.role} onValueChange={(v) => handleRoleChange(u.id, v as Role)}>
                   <SelectTrigger className="w-56">
                     <SelectValue />
                   </SelectTrigger>
@@ -195,13 +250,78 @@ export default function UsersPage() {
                   </SelectContent>
                 </Select>
               </DataTableCell>
+              <DataTableCell align="center">
+                <StatusBadge status={u.isActive === false ? "INACTIVE" : "ACTIVE"} />
+              </DataTableCell>
+              <DataTableCell align="right">{u.createdAt ? formatDate(u.createdAt) : "—"}</DataTableCell>
               <DataTableCell align="right">
-                {u.createdAt ? formatDate(u.createdAt) : "—"}
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="text-destructive hover:text-destructive"
+                  disabled={deactivatingId === u.id || u.isActive === false}
+                  onClick={() => handleDeactivate(u)}
+                >
+                  <UserX className="h-4 w-4" /> Deactivate
+                </Button>
               </DataTableCell>
             </DataTableRow>
           ))}
         </DataTableBody>
       </DataTable>
+
+      {invites.length > 0 && (
+        <div>
+          <h2 className="text-lg font-semibold text-foreground mb-3">Pending Invites</h2>
+          <DataTable>
+            <DataTableHead>
+              <DataTableHeadCell>Name</DataTableHeadCell>
+              <DataTableHeadCell>Email</DataTableHeadCell>
+              <DataTableHeadCell>Role</DataTableHeadCell>
+              <DataTableHeadCell align="center">Status</DataTableHeadCell>
+              <DataTableHeadCell align="right">Expires</DataTableHeadCell>
+              <DataTableHeadCell align="right">Actions</DataTableHeadCell>
+            </DataTableHead>
+            <DataTableBody>
+              {invites.map((invite, idx) => (
+                <DataTableRow key={invite.id} index={idx}>
+                  <DataTableCell className="font-medium">{invite.name}</DataTableCell>
+                  <DataTableCell>{invite.email}</DataTableCell>
+                  <DataTableCell>{ROLE_LABELS[invite.role]}</DataTableCell>
+                  <DataTableCell align="center">
+                    <StatusBadge status={invite.status ?? "PENDING"} />
+                  </DataTableCell>
+                  <DataTableCell align="right">
+                    {invite.expiresAt ? formatDate(invite.expiresAt) : "—"}
+                  </DataTableCell>
+                  <DataTableCell align="right">
+                    <div className="flex justify-end gap-1">
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        disabled={inviteBusyId === invite.id}
+                        onClick={() => handleResendInvite(invite)}
+                        title="Resend invite"
+                      >
+                        <RotateCw className="h-4 w-4" />
+                      </Button>
+                      <Button
+                        size="icon-sm"
+                        variant="ghost"
+                        disabled={inviteBusyId === invite.id}
+                        onClick={() => handleRevokeInvite(invite)}
+                        title="Revoke invite"
+                      >
+                        <XCircle className="h-4 w-4 text-destructive" />
+                      </Button>
+                    </div>
+                  </DataTableCell>
+                </DataTableRow>
+              ))}
+            </DataTableBody>
+          </DataTable>
+        </div>
+      )}
 
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogDescription className="invisible">Users</DialogDescription>
@@ -212,21 +332,14 @@ export default function UsersPage() {
           <div className="grid gap-4 py-2">
             <div className="grid gap-2">
               <Label>Name</Label>
-              <Input
-                value={form.name}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, name: e.target.value }))
-                }
-              />
+              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
             </div>
             <div className="grid gap-2">
               <Label>Email</Label>
               <Input
                 type="email"
                 value={form.email}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, email: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
               />
             </div>
             <div className="grid gap-2">
@@ -234,20 +347,13 @@ export default function UsersPage() {
               <Input
                 type="password"
                 value={form.password}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, password: e.target.value }))
-                }
+                onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
                 placeholder="At least 8 characters"
               />
             </div>
             <div className="grid gap-2">
               <Label>Role</Label>
-              <Select
-                value={form.role}
-                onValueChange={(v) =>
-                  setForm((f) => ({ ...f, role: v as Role }))
-                }
-              >
+              <Select value={form.role} onValueChange={(v) => setForm((f) => ({ ...f, role: v as Role }))}>
                 <SelectTrigger>
                   <SelectValue />
                 </SelectTrigger>
@@ -265,8 +371,64 @@ export default function UsersPage() {
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
-            <Button onClick={handleInvite} disabled={saving}>
+            <Button onClick={handleCreate} disabled={saving}>
               {saving ? "Creating…" : "Create User"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+        <DialogDescription className="invisible">Send Invite</DialogDescription>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Invite</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-2">
+            <p className="text-sm text-muted-foreground">
+              Sends an email invite the person uses to set their own password — no starting
+              password needed. MD can invite any role; GM can invite any role below MD.
+            </p>
+            <div className="grid gap-2">
+              <Label>Name</Label>
+              <Input
+                value={inviteForm.name}
+                onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Email</Label>
+              <Input
+                type="email"
+                value={inviteForm.email}
+                onChange={(e) => setInviteForm((f) => ({ ...f, email: e.target.value }))}
+              />
+            </div>
+            <div className="grid gap-2">
+              <Label>Role</Label>
+              <Select
+                value={inviteForm.role}
+                onValueChange={(v) => setInviteForm((f) => ({ ...f, role: v as Role }))}
+              >
+                <SelectTrigger>
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  {MANAGEMENT_ROLES.map((r) => (
+                    <SelectItem key={r} value={r}>
+                      {ROLE_LABELS[r]}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleSendInvite} disabled={sendingInvite}>
+              {sendingInvite ? "Sending…" : "Send Invite"}
             </Button>
           </DialogFooter>
         </DialogContent>
