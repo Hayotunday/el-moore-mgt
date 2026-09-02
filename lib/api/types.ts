@@ -102,6 +102,16 @@ export interface Referral {
   status: ReferralStatus;
   paidAt?: string | null;
   createdAt: string;
+  /** Not documented in the OpenAPI spec, but `GET /referrals` says it returns rows
+   * "with marketer and sale" — render defensively in case the backend embeds these. */
+  sale?: {
+    id: string;
+    propertyId: string;
+    buyerName: string;
+    totalAmount: string;
+    property?: { title: string };
+  };
+  marketer?: { id: string; name: string; email: string };
 }
 
 export type TransactionType = "INCOME" | "EXPENSE";

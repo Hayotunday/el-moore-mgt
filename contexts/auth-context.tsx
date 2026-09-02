@@ -17,6 +17,7 @@ interface AuthContextType {
   isLoading: boolean;
   login: (email: string, password: string) => Promise<User>;
   logout: () => Promise<void>;
+  refreshProfile: () => Promise<User>;
   hasAccess: (pathname: string) => boolean;
   pages: ReturnType<typeof getPagesForRole>;
 }
@@ -56,10 +57,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
   };
 
+  const refreshProfile = async () => {
+    const freshUser = await authApi.fetchProfile();
+    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(freshUser));
+    setUser(freshUser);
+    return freshUser;
+  };
+
   const hasAccess = (pathname: string) => canAccessPath(user?.role, pathname);
   const pages = getPagesForRole(user?.role);
 
-  const value: AuthContextType = { user, isLoading, login, logout, hasAccess, pages };
+  const value: AuthContextType = {
+    user,
+    isLoading,
+    login,
+    logout,
+    refreshProfile,
+    hasAccess,
+    pages,
+  };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

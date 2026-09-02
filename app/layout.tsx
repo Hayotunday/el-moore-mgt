@@ -6,6 +6,7 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/auth-context";
+import ReferralTracker from "@/components/referral-tracker";
 
 const axiforma = localFont({
   src: [
@@ -51,6 +52,7 @@ export default function RootLayout({
     >
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
         <AuthProvider>
+          <ReferralTracker />
           <Navbar />
           <main className="flex-1">
             {children}

@@ -1,378 +1,247 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { toast } from "sonner";
+import { UserPlus, Mail, Lock, User, ShieldCheck, ArrowRight } from "lucide-react";
+import ScrollReveal from "@/components/scroll-reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
-import { Alert, AlertDescription } from "@/components/ui/alert";
-import { UserPlus, Mail, Phone, Lock, User, Building } from "lucide-react";
+import { registerExternalMarketer, verifyCode, resendVerification } from "@/lib/api/auth";
 
-export default function RegisterPage() {
-  const router = useRouter();
-  const [formData, setFormData] = useState({
-    firstName: "",
-    lastName: "",
-    email: "",
-    phone: "",
-    password: "",
-    confirmPassword: "",
-    experience: "",
-    specialization: "",
-  });
-  const [errors, setErrors] = useState<Record<string, string>>({});
-  const [isLoading, setIsLoading] = useState(false);
-  const [success, setSuccess] = useState(false);
+type Step = "form" | "verify" | "done";
 
-  const handleInputChange = (
-    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>,
-  ) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
-    // Clear error when user starts typing
-    if (errors[name]) {
-      setErrors((prev) => ({ ...prev, [name]: "" }));
-    }
-  };
+export default function MarketerRegisterPage() {
+  const [step, setStep] = useState<Step>("form");
+  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [code, setCode] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [submitting, setSubmitting] = useState(false);
+  const [resending, setResending] = useState(false);
 
-  const validateForm = () => {
-    const newErrors: Record<string, string> = {};
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Please enter a valid email address";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    } else if (!/^\+?[\d\s\-\(\)]+$/.test(formData.phone)) {
-      newErrors.phone = "Please enter a valid phone number";
-    }
-
-    if (!formData.password) {
-      newErrors.password = "Password is required";
-    } else if (formData.password.length < 8) {
-      newErrors.password = "Password must be at least 8 characters long";
-    }
-
-    if (formData.password !== formData.confirmPassword) {
-      newErrors.confirmPassword = "Passwords do not match";
-    }
-
-    if (!formData.experience) {
-      newErrors.experience = "Years of experience is required";
-    }
-
-    if (!formData.specialization) {
-      newErrors.specialization = "Specialization is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
+    setError(null);
 
-    if (!validateForm()) {
+    if (form.password.length < 12) {
+      setError("Password must be at least 12 characters.");
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setError("Passwords do not match.");
       return;
     }
 
-    setIsLoading(true);
-
+    setSubmitting(true);
     try {
-      // Simulate API call
-      await new Promise((resolve) => setTimeout(resolve, 2000));
-
-      // In a real app, this would be an API call to register the user
-      console.log("Registration data:", formData);
-
-      setSuccess(true);
-
-      // Redirect to login or dashboard after successful registration
-      setTimeout(() => {
-        router.push("/marketer");
-      }, 2000);
-    } catch (error) {
-      console.error("Registration failed:", error);
-      setErrors({ general: "Registration failed. Please try again." });
+      await registerExternalMarketer({
+        name: form.name,
+        email: form.email,
+        password: form.password,
+      });
+      setStep("verify");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Could not create account.");
     } finally {
-      setIsLoading(false);
+      setSubmitting(false);
     }
   };
 
-  if (success) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-background px-4">
-        <Card className="w-full max-w-md">
-          <CardHeader className="text-center">
-            <div className="mx-auto w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mb-4">
-              <UserPlus className="w-6 h-6 text-green-600" />
-            </div>
-            <CardTitle className="text-2xl text-green-600">
-              Registration Successful!
-            </CardTitle>
-            <CardDescription>
-              Your account has been created successfully. You will be redirected
-              to the dashboard shortly.
-            </CardDescription>
-          </CardHeader>
-        </Card>
-      </div>
-    );
-  }
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setSubmitting(true);
+    try {
+      await verifyCode({ email: form.email, code });
+      setStep("done");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid or expired code.");
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setResending(true);
+    try {
+      await resendVerification(form.email);
+      toast.success("Verification code resent.");
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not resend code.");
+    } finally {
+      setResending(false);
+    }
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background px-4 py-8">
-      <Card className="w-full max-w-2xl">
-        <CardHeader className="text-center">
-          <div className="mx-auto w-16 h-16 bg-primary/10 rounded-full flex items-center justify-center mb-4">
-            <UserPlus className="w-8 h-8 text-primary" />
-          </div>
-          <CardTitle className="text-3xl font-bold">
-            Join El-Moore as a Marketer
-          </CardTitle>
-          <CardDescription className="text-lg">
-            Start your career as an external sales agent and earn commissions on
-            property sales
-          </CardDescription>
-        </CardHeader>
+    <div
+      className="relative min-h-screen w-full overflow-hidden flex items-center justify-center py-16"
+      style={{ background: "var(--gradient-green)" }}
+    >
+      <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_80%_20%,white,transparent_45%)]" />
 
-        <CardContent>
-          {errors.general && (
-            <Alert className="mb-6 border-red-200 bg-red-50">
-              <AlertDescription className="text-red-700">
-                {errors.general}
-              </AlertDescription>
-            </Alert>
-          )}
+      <ScrollReveal className="relative z-10 w-full max-w-md px-4">
+        <div className="rounded-md bg-white/95 backdrop-blur-xl p-8 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.5)]">
+          {step === "form" && (
+            <>
+              <div className="mb-6">
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-sm bg-primary text-primary-foreground">
+                  <UserPlus className="h-5 w-5" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground">Become a marketer</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Refer buyers, earn commission. An MD or GM reviews every application
+                  before it&apos;s approved.
+                </p>
+              </div>
 
-          <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Personal Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <User className="w-5 h-5" />
-                Personal Information
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleRegister} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="firstName">First Name *</Label>
+                  <Label htmlFor="name" className="flex items-center gap-2">
+                    <User className="h-4 w-4" /> Full Name
+                  </Label>
                   <Input
-                    id="firstName"
-                    name="firstName"
-                    type="text"
-                    value={formData.firstName}
-                    onChange={handleInputChange}
-                    className={errors.firstName ? "border-red-500" : ""}
-                    placeholder="Enter your first name"
+                    id="name"
+                    required
+                    value={form.name}
+                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
+                    placeholder="Jane Doe"
                   />
-                  {errors.firstName && (
-                    <p className="text-sm text-red-600">{errors.firstName}</p>
-                  )}
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="email" className="flex items-center gap-2">
+                    <Mail className="h-4 w-4" /> Email
+                  </Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    required
+                    value={form.email}
+                    onChange={(e) => setForm((f) => ({ ...f, email: e.target.value }))}
+                    placeholder="you@example.com"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="password" className="flex items-center gap-2">
+                    <Lock className="h-4 w-4" /> Password
+                  </Label>
+                  <Input
+                    id="password"
+                    type="password"
+                    required
+                    value={form.password}
+                    onChange={(e) => setForm((f) => ({ ...f, password: e.target.value }))}
+                    placeholder="At least 12 characters"
+                  />
+                </div>
+                <div className="space-y-2">
+                  <Label htmlFor="confirmPassword">Confirm Password</Label>
+                  <Input
+                    id="confirmPassword"
+                    type="password"
+                    required
+                    value={form.confirmPassword}
+                    onChange={(e) => setForm((f) => ({ ...f, confirmPassword: e.target.value }))}
+                  />
                 </div>
 
-                <div className="space-y-2">
-                  <Label htmlFor="lastName">Last Name *</Label>
-                  <Input
-                    id="lastName"
-                    name="lastName"
-                    type="text"
-                    value={formData.lastName}
-                    onChange={handleInputChange}
-                    className={errors.lastName ? "border-red-500" : ""}
-                    placeholder="Enter your last name"
-                  />
-                  {errors.lastName && (
-                    <p className="text-sm text-red-600">{errors.lastName}</p>
-                  )}
-                </div>
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="email" className="flex items-center gap-2">
-                  <Mail className="w-4 h-4" />
-                  Email Address *
-                </Label>
-                <Input
-                  id="email"
-                  name="email"
-                  type="email"
-                  value={formData.email}
-                  onChange={handleInputChange}
-                  className={errors.email ? "border-red-500" : ""}
-                  placeholder="your.email@example.com"
-                />
-                {errors.email && (
-                  <p className="text-sm text-red-600">{errors.email}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="phone" className="flex items-center gap-2">
-                  <Phone className="w-4 h-4" />
-                  Phone Number *
-                </Label>
-                <Input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={handleInputChange}
-                  className={errors.phone ? "border-red-500" : ""}
-                  placeholder="+234 xxx xxx xxxx"
-                />
-                {errors.phone && (
-                  <p className="text-sm text-red-600">{errors.phone}</p>
-                )}
-              </div>
-            </div>
-
-            {/* Account Security */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Lock className="w-5 h-5" />
-                Account Security
-              </h3>
-
-              <div className="space-y-2">
-                <Label htmlFor="password">Password *</Label>
-                <Input
-                  id="password"
-                  name="password"
-                  type="password"
-                  value={formData.password}
-                  onChange={handleInputChange}
-                  className={errors.password ? "border-red-500" : ""}
-                  placeholder="Create a strong password"
-                />
-                {errors.password && (
-                  <p className="text-sm text-red-600">{errors.password}</p>
-                )}
-              </div>
-
-              <div className="space-y-2">
-                <Label htmlFor="confirmPassword">Confirm Password *</Label>
-                <Input
-                  id="confirmPassword"
-                  name="confirmPassword"
-                  type="password"
-                  value={formData.confirmPassword}
-                  onChange={handleInputChange}
-                  className={errors.confirmPassword ? "border-red-500" : ""}
-                  placeholder="Confirm your password"
-                />
-                {errors.confirmPassword && (
-                  <p className="text-sm text-red-600">
-                    {errors.confirmPassword}
+                {error && (
+                  <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+                    {error}
                   </p>
                 )}
+
+                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                  {submitting ? "Creating account..." : "Apply as a Marketer"}
+                </Button>
+
+                <p className="text-center text-sm text-muted-foreground">
+                  Already registered?{" "}
+                  <Link href="/marketer" className="text-primary underline underline-offset-2">
+                    Sign in
+                  </Link>
+                </p>
+              </form>
+            </>
+          )}
+
+          {step === "verify" && (
+            <>
+              <div className="mb-6">
+                <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-sm bg-primary text-primary-foreground">
+                  <ShieldCheck className="h-5 w-5" />
+                </div>
+                <h1 className="text-2xl font-bold text-foreground">Verify your email</h1>
+                <p className="text-sm text-muted-foreground mt-1">
+                  We sent a 6-digit code to <span className="font-medium">{form.email}</span>.
+                  Enter it below to confirm your address.
+                </p>
               </div>
-            </div>
 
-            {/* Professional Information */}
-            <div className="space-y-4">
-              <h3 className="text-lg font-semibold text-foreground flex items-center gap-2">
-                <Building className="w-5 h-5" />
-                Professional Information
-              </h3>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <form onSubmit={handleVerify} className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="experience">Years of Experience *</Label>
-                  <select
-                    id="experience"
-                    name="experience"
-                    value={formData.experience}
-                    onChange={handleInputChange}
-                    className={`w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.experience ? "border-red-500" : ""}`}
-                  >
-                    <option value="">Select experience level</option>
-                    <option value="0-1">0-1 years</option>
-                    <option value="1-3">1-3 years</option>
-                    <option value="3-5">3-5 years</option>
-                    <option value="5-10">5-10 years</option>
-                    <option value="10+">10+ years</option>
-                  </select>
-                  {errors.experience && (
-                    <p className="text-sm text-red-600">{errors.experience}</p>
+                  <Label htmlFor="code">Verification Code</Label>
+                  <Input
+                    id="code"
+                    required
+                    inputMode="numeric"
+                    maxLength={6}
+                    value={code}
+                    onChange={(e) => setCode(e.target.value)}
+                    placeholder="123456"
+                    className="text-center text-lg tracking-[0.5em]"
+                  />
+                </div>
+
+                {error && (
+                  <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+                    {error}
+                  </p>
+                )}
+
+                <Button type="submit" className="w-full" size="lg" disabled={submitting}>
+                  {submitting ? (
+                    "Verifying..."
+                  ) : (
+                    <>
+                      Verify Email <ArrowRight className="h-4 w-4" />
+                    </>
                   )}
-                </div>
+                </Button>
 
-                <div className="space-y-2">
-                  <Label htmlFor="specialization">Specialization *</Label>
-                  <select
-                    id="specialization"
-                    name="specialization"
-                    value={formData.specialization}
-                    onChange={handleInputChange}
-                    className={`w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50 ${errors.specialization ? "border-red-500" : ""}`}
-                  >
-                    <option value="">Select specialization</option>
-                    <option value="residential">Residential Properties</option>
-                    <option value="commercial">Commercial Properties</option>
-                    <option value="luxury">Luxury Properties</option>
-                    <option value="land">Land & Plots</option>
-                    <option value="rental">Rental Properties</option>
-                  </select>
-                  {errors.specialization && (
-                    <p className="text-sm text-red-600">
-                      {errors.specialization}
-                    </p>
-                  )}
-                </div>
-              </div>
-            </div>
-
-            {/* Submit Button */}
-            <Button
-              type="submit"
-              className="w-full"
-              disabled={isLoading}
-              size="lg"
-            >
-              {isLoading ? (
-                <div className="flex items-center gap-2">
-                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
-                  Creating Account...
-                </div>
-              ) : (
-                "Create Marketer Account"
-              )}
-            </Button>
-
-            {/* Login Link */}
-            <div className="text-center">
-              <p className="text-sm text-muted-foreground">
-                Already have an account?{" "}
-                <Link
-                  href="/login"
-                  className="text-primary hover:underline font-medium"
+                <button
+                  type="button"
+                  onClick={handleResend}
+                  disabled={resending}
+                  className="w-full text-center text-sm text-muted-foreground hover:text-foreground transition-colors underline underline-offset-2"
                 >
-                  Sign in here
-                </Link>
+                  {resending ? "Resending..." : "Resend code"}
+                </button>
+              </form>
+            </>
+          )}
+
+          {step === "done" && (
+            <div className="text-center py-4">
+              <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-full bg-green-100">
+                <ShieldCheck className="h-6 w-6 text-green-600" />
+              </div>
+              <h1 className="text-2xl font-bold text-foreground mb-2">Email verified</h1>
+              <p className="text-sm text-muted-foreground mb-6">
+                Your application is now pending review. An MD or GM will approve your
+                account before you can sign in — we&apos;ll notify you by email once that
+                happens.
               </p>
+              <Link href="/marketer">
+                <Button className="w-full" size="lg">
+                  Back to Sign In
+                </Button>
+              </Link>
             </div>
-          </form>
-        </CardContent>
-      </Card>
+          )}
+        </div>
+      </ScrollReveal>
     </div>
   );
 }

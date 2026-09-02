@@ -1,197 +1,165 @@
 "use client";
 
-import StatCard from "@/components/dashboard-stat-card";
-import {
-  marketerProfile,
-  marketerSalesReport,
-  leads,
-} from "@/lib/dashboardMockData";
-import { TrendingUp, DollarSign, Users, FileText, Pencil } from "lucide-react";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogTrigger,
-} from "@/components/ui/dialog";
+import { motion } from "framer-motion";
+import { Share2, Wallet, LineChart, ArrowRight, Lock } from "lucide-react";
+import ScrollReveal from "@/components/scroll-reveal";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { useAuth } from "@/contexts/auth-context";
 
-export default function MarketerPortal() {
-  const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat("en-NG", {
-      style: "currency",
-      currency: "NGN",
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
-    }).format(value);
+const pillars = [
+  {
+    icon: Share2,
+    title: "One link, every referral",
+    body: "Share your personal link — every property inspection and sale it leads to is credited back to you automatically.",
+  },
+  {
+    icon: Wallet,
+    title: "Commission you can track",
+    body: "See exactly what's pending and what's been paid, referral by referral, with no back-and-forth needed.",
+  },
+  {
+    icon: LineChart,
+    title: "Built for external partners",
+    body: "A dedicated portal for marketers outside El-Moore — separate from internal staff tools, scoped to what matters to you.",
+  },
+];
+
+export default function MarketerLandingPage() {
+  const router = useRouter();
+  const { login } = useAuth();
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setError(null);
+    setIsSubmitting(true);
+    try {
+      await login(email, password);
+      router.push("/marketer/overview");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Unable to sign in.");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
-  const totalCommissions = marketerSalesReport.reduce(
-    (sum, sale) => sum + sale.commission,
-    0,
-  );
-
   return (
-    <div className="space-y-8">
-      {/* Welcome Header */}
-      <div>
-        <h1 className="text-3xl font-bold text-foreground">
-          Welcome back, {marketerProfile.name}!
-        </h1>
-        <p className="text-muted-foreground mt-2">
-          Here's your sales performance overview
-        </p>
-      </div>
+    <div
+      className="relative min-h-screen w-full overflow-hidden"
+      style={{ background: "var(--gradient-green)" }}
+    >
+      <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,white,transparent_45%)]" />
 
-      {/* Profile Card */}
-      <div className="rounded-lg border border-border bg-muted/30 p-6">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center gap-4">
-            <div className="w-16 h-16 rounded-full bg-primary/10 flex items-center justify-center">
-              <span className="text-2xl">👤</span>
-            </div>
-            <div>
-              <h2 className="text-xl font-semibold text-foreground">
-                {marketerProfile.name}
-              </h2>
-              <p className="text-muted-foreground">External Sales Agent</p>
-              <p className="text-sm text-muted-foreground">
-                Member since {marketerProfile.joinDate}
+      <div className="container relative z-10 grid min-h-screen items-center gap-12 py-16 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
+        {/* Editorial write-up */}
+        <ScrollReveal direction="left" className="text-white">
+          <p className="text-[10px] font-semibold uppercase tracking-widest text-gold mb-4">
+            El-Moore Marketer Portal
+          </p>
+          <h1 className="text-4xl md:text-5xl font-bold leading-[1.08] mb-6">
+            Earn commission on
+            <br />
+            <span className="text-gold italic">every referral that closes.</span>
+          </h1>
+          <p className="text-white/75 max-w-lg mb-10">
+            Bring us buyers, share your link, and let us handle the rest —
+            listings, paperwork, and payment. This is where you track it all.
+          </p>
+
+          <div className="grid gap-6 sm:grid-cols-1 max-w-lg">
+            {pillars.map((pillar, i) => (
+              <motion.div
+                key={pillar.title}
+                initial={{ opacity: 0, y: 12 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: 0.6,
+                  delay: 0.15 + i * 0.1,
+                  ease: [0.16, 1, 0.3, 1],
+                }}
+                className="flex items-start gap-4 rounded-md bg-white/5 border border-white/10 p-5"
+              >
+                <pillar.icon className="h-5 w-5 text-gold mt-0.5 shrink-0" />
+                <div>
+                  <h3 className="font-semibold text-sm text-white">{pillar.title}</h3>
+                  <p className="text-sm text-white/65 mt-1">{pillar.body}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </ScrollReveal>
+
+        {/* Login card */}
+        <ScrollReveal direction="right">
+          <div className="relative mx-auto w-full max-w-md rounded-md bg-white/95 backdrop-blur-xl p-8 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.5)]">
+            <div className="mb-6">
+              <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-sm bg-primary text-primary-foreground">
+                <Lock className="h-5 w-5" />
+              </div>
+              <h2 className="text-2xl font-bold text-foreground">Sign in to your portal</h2>
+              <p className="text-sm text-muted-foreground mt-1">
+                Not a marketer yet?{" "}
+                <Link href="/marketer/register" className="underline underline-offset-2">
+                  Apply here
+                </Link>
+                . El-Moore staff should use the{" "}
+                <Link href="/management" className="underline underline-offset-2">
+                  management portal
+                </Link>
+                .
               </p>
             </div>
-          </div>
-          <Dialog>
-            <DialogTrigger asChild>
-              <button className="flex items-center gap-2 px-4 py-2 rounded-lg border border-border hover:bg-muted transition-colors">
-                <Pencil className="h-4 w-4" />
-                Edit Profile
-              </button>
-            </DialogTrigger>
-            <DialogContent>
-              <DialogHeader>
-                <DialogTitle>Edit Marketer Profile</DialogTitle>
-                <DialogDescription>
-                  Update your personal information and contact details.
-                </DialogDescription>
-              </DialogHeader>
-              <div className="py-8 text-center text-sm text-muted-foreground">
-                Profile edit form implementation goes here.
+
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  required
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="you@example.com"
+                />
               </div>
-            </DialogContent>
-          </Dialog>
-        </div>
-      </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  required
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="••••••••"
+                />
+              </div>
 
-      {/* Key Statistics */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <StatCard
-          label="Total Commission"
-          value={formatCurrency(totalCommissions)}
-          sublabel="Lifetime earnings"
-          icon={<DollarSign className="h-6 w-6" />}
-          variant="accent"
-        />
-        <StatCard
-          label="Active Sales"
-          value={marketerProfile.activeSales}
-          sublabel="In progress"
-          icon={<TrendingUp className="h-6 w-6" />}
-          variant="success"
-        />
-        <StatCard
-          label="Completed Sales"
-          value={marketerProfile.completedSales}
-          sublabel="This year"
-          icon={<FileText className="h-6 w-6" />}
-        />
-        <StatCard
-          label="Total Leads"
-          value={leads.length}
-          sublabel="In database"
-          icon={<Users className="h-6 w-6" />}
-        />
-      </div>
+              {error && (
+                <p className="text-sm text-destructive bg-destructive/10 rounded-md px-3 py-2">
+                  {error}
+                </p>
+              )}
 
-      {/* Quick Actions */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Link
-          href="/marketer/sales"
-          className="group rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all"
-        >
-          <TrendingUp className="h-8 w-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
-          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-            View Sales Report
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Track your completed transactions and performance
-          </p>
-        </Link>
-
-        <Link
-          href="/marketer/history"
-          className="group rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all"
-        >
-          <DollarSign className="h-8 w-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
-          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-            Commission History
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            View your earnings and payment history
-          </p>
-        </Link>
-
-        <Link
-          href="/marketer/leads"
-          className="group rounded-lg border border-border bg-muted/30 p-6 hover:border-primary/50 hover:bg-primary/5 transition-all"
-        >
-          <Users className="h-8 w-8 text-primary mb-3 group-hover:scale-110 transition-transform" />
-          <h3 className="text-lg font-semibold text-foreground group-hover:text-primary transition-colors">
-            Manage Leads
-          </h3>
-          <p className="text-sm text-muted-foreground mt-1">
-            Generate and track potential clients
-          </p>
-        </Link>
-      </div>
-
-      {/* Recent Activity */}
-      <div className="rounded-lg border border-border bg-muted/30 p-6">
-        <h3 className="text-lg font-semibold text-foreground mb-4">
-          Recent Activity
-        </h3>
-        <div className="space-y-3">
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-background">
-            <div className="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-              <span className="text-sm">💰</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">Commission payment received</p>
-              <p className="text-xs text-muted-foreground">2 days ago</p>
-            </div>
-            <span className="text-sm font-semibold text-green-600">
-              {formatCurrency(250000)}
-            </span>
+              <Button type="submit" className="w-full" size="lg" disabled={isSubmitting}>
+                {isSubmitting ? (
+                  "Signing in..."
+                ) : (
+                  <>
+                    Sign in <ArrowRight className="h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            </form>
           </div>
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-background">
-            <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-              <span className="text-sm">🏠</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">New property listing added</p>
-              <p className="text-xs text-muted-foreground">5 days ago</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-3 p-3 rounded-lg bg-background">
-            <div className="w-8 h-8 rounded-full bg-purple-100 flex items-center justify-center">
-              <span className="text-sm">👥</span>
-            </div>
-            <div className="flex-1">
-              <p className="text-sm font-medium">Lead converted to sale</p>
-              <p className="text-xs text-muted-foreground">1 week ago</p>
-            </div>
-          </div>
-        </div>
+        </ScrollReveal>
       </div>
     </div>
   );
