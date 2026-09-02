@@ -19,7 +19,7 @@ export default function MarketerHeader() {
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 flex w-full items-center justify-center border-b border-primary/10 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+    <header className="sticky top-0 z-50 flex w-full items-center justify-center bg-background/95 shadow-ambient backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="container flex h-16 items-center justify-between">
         <Link href="/marketer/overview" className="flex shrink-0 items-center">
           <img src="/assets/el-moore.png" alt="El-Moore Logo" className="h-10 w-auto" />

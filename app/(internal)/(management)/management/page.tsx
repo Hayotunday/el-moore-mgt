@@ -102,7 +102,7 @@ export default function ManagementLandingPage() {
 
         {/* Login card */}
         <ScrollReveal direction="right">
-          <div className="relative mx-auto w-full max-w-md rounded-md bg-white/95 backdrop-blur-xl p-8 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.5)]">
+          <div className="relative mx-auto w-full max-w-md rounded-md bg-white/95 backdrop-blur-xl p-8 shadow-ambient-lg">
             <div className="mb-6">
               <div className="mb-4 flex h-10 w-10 items-center justify-center rounded-sm bg-primary text-primary-foreground">
                 <Lock className="h-5 w-5" />

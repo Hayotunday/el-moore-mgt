@@ -95,9 +95,13 @@ export default function MarketerSettingsPage() {
 
   return (
     <div className="space-y-8">
-      <PageHeader title="Account Settings" subtitle="Manage your profile and login details." />
+      <PageHeader
+        eyebrow="El-Moore Marketer"
+        title="Account Settings"
+        subtitle="Manage your profile and login details."
+      />
 
-      <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)] space-y-4">
+      <div className="rounded-md bg-card p-6 shadow-ambient space-y-4">
         <h2 className="text-lg font-semibold text-foreground">Profile Photo</h2>
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold text-secondary-foreground text-lg font-bold">
@@ -134,7 +138,7 @@ export default function MarketerSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)] space-y-4">
+      <div className="rounded-md bg-card p-6 shadow-ambient space-y-4">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <User className="h-4 w-4" /> Profile
         </h2>
@@ -166,7 +170,7 @@ export default function MarketerSettingsPage() {
         </div>
       </div>
 
-      <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)] space-y-4">
+      <div className="rounded-md bg-card p-6 shadow-ambient space-y-4">
         <h2 className="text-lg font-semibold text-foreground flex items-center gap-2">
           <Lock className="h-4 w-4" /> Password
         </h2>

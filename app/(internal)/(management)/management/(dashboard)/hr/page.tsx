@@ -132,7 +132,7 @@ export default function HrPage() {
             <p className="text-sm text-muted-foreground">No reports for this selection.</p>
           )}
           {reports.map((report) => (
-            <div key={report.id} className="rounded-md bg-card p-5 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)]">
+            <div key={report.id} className="rounded-md bg-card p-5 shadow-ambient">
               <div className="flex items-center justify-between mb-2">
                 <p className="text-sm font-semibold text-foreground">{report.staffName}</p>
                 <p className="text-xs text-muted-foreground">{formatDate(report.date)}</p>

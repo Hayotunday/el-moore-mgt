@@ -17,9 +17,12 @@ The palette moves beyond simple branding into a functional hierarchy of investme
 
 ### The Palette
 
+Sourced directly from `el-moore-full-brand-guide.pdf` and implemented as literal hex values in `app/globals.css` (no HSL approximation):
+
 - **Primary (`#142C26` / `primary_container`):** Deep Forest Green. This is our "anchor" color, representing growth, stability, and institutional trust.
-- **Secondary (`#CDBF8A` / `secondary_fixed_dim`):** Champagne Gold. Used exclusively for highlights, success metrics, and "premium" interactions.
+- **Secondary (`#CDBF8A` / `secondary_fixed_dim`):** Champagne Gold / Ecru. Used exclusively for highlights, success metrics, and "premium" interactions.
 - **Surface (`#FAF9F5` / `surface`):** A warm, off-white "fine paper" base that prevents the clinical coldness of pure `#FFFFFF`.
+- **White (`#FFFFFF`):** Cards and the tertiary brand color — clarity and contrast.
 
 ### The "No-Line" Rule
 
@@ -38,10 +41,10 @@ For floating investment calculators or "Real-Time Consultation" widgets, use **G
 
 ## 3. Typography: Editorial Authority
 
-We use a dual-font strategy to balance modern geometric precision with readability.
+**Axiforma is the sole typeface** — it is the brand-mandated font from `el-moore-full-brand-guide.pdf`, already licensed and loaded (`public/fonts/Axiforma-*.woff2` via `next/font/local` in `app/layout.tsx`, weights 400/500/600/700 mapped to `--font-sans`). There is no second typeface in this system; weight and scale carry the hierarchy instead.
 
-- **Display & Headlines (Manrope):** Chosen for its modern, expansive feel. `display-lg` (3.5rem) should be used for hero ROI figures and property titles. The tight tracking and large scale convey "Institutional Power."
-- **Body & Titles (Work Sans):** A highly legible, geometric sans-serif that echoes the Axiforma brand requirement. It provides a clean, "no-nonsense" atmosphere for financial data and property specifications.
+- **Display & Headlines:** Axiforma Bold (700) at large scale (`text-4xl`–`text-6xl`), tight tracking. Used for hero figures and property titles to convey "Institutional Power."
+- **Body & Titles:** Axiforma Regular/Medium (400/500) — clean, geometric, and legible for financial data and property specifications.
 - **The Hierarchy:**
   - **Captions/Labels:** Use `label-md` in `secondary` (Gold) for "Investment Type" tags to ensure they feel like premium markers, not just metadata.
   - **Body:** Keep `body-md` generous in line-height (1.6) to ensure the financial guides in the "Academy" section feel approachable.
@@ -92,6 +95,6 @@ Traditional drop shadows are too "software-standard." In this system, depth is o
 ### Don't:
 
 - **Don't** use 100% opaque black for text. Use `on_surface` (#1B1C1A) to maintain a high-end, softened contrast.
-- **Don't** use "Standard" icons. Use thin-stroke, custom SVG icons that match the weight of the Work Sans typography.
+- **Don't** use "Standard" icons. Use thin-stroke icons (`lucide-react`) that match the weight of the Axiforma typography.
 - **Don't** use large corner radii. This system is "financial-focused"; keep roundedness to `sm` (0.125rem) or `md` (0.375rem) to maintain a serious, structured tone.
 - **Don't** use divider lines to separate list items in the "Showroom." Use the Spacing Scale `spacing-4` (1.4rem) to create separation through "breathing room."

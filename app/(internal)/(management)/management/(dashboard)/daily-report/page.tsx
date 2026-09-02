@@ -57,7 +57,7 @@ export default function DailyReportPage() {
     <div className="space-y-8">
       <PageHeader title="Daily Report" subtitle="Log what you worked on today — one entry per day." />
 
-      <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.08)] space-y-4">
+      <div className="rounded-md bg-card p-6 shadow-ambient space-y-4">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">
             <FileText className="h-5 w-5 text-gold" />
@@ -103,7 +103,7 @@ export default function DailyReportPage() {
           {history
             .filter((r) => r.id !== today?.id)
             .map((report) => (
-              <div key={report.id} className="rounded-md bg-card p-5 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)]">
+              <div key={report.id} className="rounded-md bg-card p-5 shadow-ambient">
                 <p className="text-xs text-muted-foreground mb-2">{formatDate(report.date)}</p>
                 <p className="text-sm text-muted-foreground whitespace-pre-wrap">{report.content}</p>
               </div>

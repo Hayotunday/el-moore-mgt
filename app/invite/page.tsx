@@ -81,7 +81,7 @@ function InviteClaimContent() {
       <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_80%_20%,white,transparent_45%)]" />
 
       <ScrollReveal className="relative z-10 w-full max-w-md px-4">
-        <div className="rounded-md bg-white/95 backdrop-blur-xl p-8 shadow-[0_24px_80px_-16px_rgba(0,0,0,0.5)]">
+        <div className="rounded-md bg-white/95 backdrop-blur-xl p-8 shadow-ambient-lg">
           {verifying && (
             <p className="text-sm text-muted-foreground text-center py-8">Checking your invite…</p>
           )}

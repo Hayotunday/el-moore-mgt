@@ -121,7 +121,7 @@ export default function NewsletterPage() {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Composer */}
-        <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)] space-y-4">
+        <div className="rounded-md bg-card p-6 shadow-ambient space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Compose Campaign</h2>
             <p className="text-sm text-muted-foreground">
@@ -152,7 +152,7 @@ export default function NewsletterPage() {
         </div>
 
         {/* Subscriber directory */}
-        <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)] space-y-4">
+        <div className="rounded-md bg-card p-6 shadow-ambient space-y-4">
           <div>
             <h2 className="text-lg font-semibold text-foreground">Subscribers</h2>
             <p className="text-sm text-muted-foreground">Who will receive the next campaign.</p>
@@ -177,7 +177,7 @@ export default function NewsletterPage() {
       </div>
 
       {/* Automated Greetings */}
-      <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)] space-y-5">
+      <div className="rounded-md bg-card p-6 shadow-ambient space-y-5">
         <div className="flex items-start gap-3">
           <Info className="h-4 w-4 text-gold mt-0.5 shrink-0" />
           <div>

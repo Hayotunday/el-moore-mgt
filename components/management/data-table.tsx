@@ -3,7 +3,7 @@ import { cn } from "@/lib/utils";
 
 export function DataTable({ children }: { children: ReactNode }) {
   return (
-    <div className="rounded-md bg-card overflow-hidden shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)]">
+    <div className="rounded-md bg-card overflow-hidden shadow-ambient">
       <div className="overflow-x-auto">
         <table className="w-full">{children}</table>
       </div>

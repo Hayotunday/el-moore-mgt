@@ -1,5 +1,6 @@
 import { ReactNode } from "react";
 import { cn } from "@/lib/utils";
+import AnimatedCounter from "@/components/animated-counter";
 
 interface StatCardProps {
   label: string;
@@ -16,8 +17,10 @@ export default function StatCard({
   icon,
   variant = "default",
 }: StatCardProps) {
+  const isNumeric = typeof value === "number" && Number.isFinite(value);
+
   return (
-    <div className="rounded-md bg-card p-6 space-y-2 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.08)]">
+    <div className="rounded-md bg-card p-6 space-y-2 shadow-ambient transition-shadow hover:shadow-ambient-lg">
       <div className="flex items-start justify-between gap-4">
         <div className="min-w-0 flex-1">
           <p className="text-[10px] uppercase tracking-widest text-muted-foreground font-semibold truncate">
@@ -25,7 +28,7 @@ export default function StatCard({
           </p>
           <p
             className={cn(
-              "text-2xl sm:text-3xl font-bold mt-2 truncate",
+              "text-2xl sm:text-3xl font-bold mt-2 truncate tabular-nums",
               variant === "gold" && "text-gold",
               variant === "success" && "text-emerald-700",
               variant === "destructive" && "text-red-600",
@@ -33,7 +36,7 @@ export default function StatCard({
             )}
             title={value.toString()}
           >
-            {value}
+            {isNumeric ? <AnimatedCounter value={value} /> : value}
           </p>
           {sublabel && (
             <p className="text-xs text-muted-foreground mt-1 truncate">{sublabel}</p>

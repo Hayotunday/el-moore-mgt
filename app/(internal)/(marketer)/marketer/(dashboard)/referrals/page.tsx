@@ -63,6 +63,7 @@ export default function MarketerReferralsPage() {
   return (
     <div className="space-y-8">
       <PageHeader
+        eyebrow="El-Moore Marketer"
         title="Your Referrals"
         subtitle="Every sale attributed to you, and where its commission stands."
       />

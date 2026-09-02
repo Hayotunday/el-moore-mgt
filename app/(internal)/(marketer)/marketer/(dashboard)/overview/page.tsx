@@ -65,6 +65,7 @@ export default function MarketerOverviewPage() {
   return (
     <div className="space-y-8">
       <PageHeader
+        eyebrow="El-Moore Marketer"
         title={`Welcome back, ${user?.name.split(" ")[0] ?? ""}`}
         subtitle="Here's how your referrals are performing."
       />
@@ -96,7 +97,7 @@ export default function MarketerOverviewPage() {
         />
       </div>
 
-      <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.08)] space-y-4">
+      <div className="rounded-md bg-card p-6 shadow-ambient space-y-4">
         <div>
           <h2 className="text-lg font-semibold text-foreground">Your Referral Link</h2>
           <p className="text-sm text-muted-foreground mt-1">
@@ -116,7 +117,7 @@ export default function MarketerOverviewPage() {
         </div>
       </div>
 
-      <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)]">
+      <div className="rounded-md bg-card p-6 shadow-ambient">
         <div className="flex items-center justify-between mb-4">
           <h2 className="text-lg font-semibold text-foreground">Recent Referrals</h2>
           <Link

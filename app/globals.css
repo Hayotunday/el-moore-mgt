@@ -52,53 +52,57 @@
 }
 
 :root {
-  /* ── Base ── */
-  --background: hsl(40 33% 97%);    /* warm cream — pages breathe */
-  --foreground: hsl(156 33% 12%);   /* dark green text */
+  /* ── Base — literal El-Moore brand hex, per el-moore-full-brand-guide.pdf ── */
+  --background: #FAF9F5;    /* warm "fine paper" surface — not stark white */
+  --foreground: #142C26;    /* Deep Forest Green — brand primary */
 
-  --card: hsl(0 0% 100%);
-  --card-foreground: hsl(156 33% 12%);
+  --card: #FFFFFF;
+  --card-foreground: #142C26;
 
-  --popover: hsl(0 0% 100%);
-  --popover-foreground: hsl(156 33% 12%);
+  --popover: #FFFFFF;
+  --popover-foreground: #142C26;
 
-  --primary: hsl(156 33% 12%);      /* rich dark green — navbar, CTA */
-  --primary-foreground: hsl(0 0% 100%);
+  --primary: #142C26;       /* Deep Forest Green — navbar, CTA */
+  --primary-foreground: #FFFFFF;
 
-  --secondary: hsl(44 33% 67%);     /* warm gold */
-  --secondary-foreground: hsl(156 33% 12%);
+  --secondary: #CDBF8A;     /* Champagne Gold/Ecru — brand secondary */
+  --secondary-foreground: #142C26;
 
-  --muted: hsl(40 20% 93%);         /* warm off-white */
-  --muted-foreground: hsl(156 15% 42%);
+  --muted: #F1EEE3;         /* a shade below --background, for tonal layering (No-Line Rule) */
+  --muted-foreground: #4C5F58;
 
-  --accent: hsl(44 33% 67%);
-  --accent-foreground: hsl(156 33% 12%);
+  --accent: #CDBF8A;
+  --accent-foreground: #142C26;
 
-  --destructive: hsl(0 84% 60%);
-  --destructive-foreground: hsl(0 0% 100%);
+  --destructive: #DC4C4C;
+  --destructive-foreground: #FFFFFF;
 
-  --border: hsl(40 15% 87%);
-  --input: hsl(40 15% 87%);
-  --ring: hsl(156 33% 12%);
+  --border: #E7E2D3;
+  --input: #E7E2D3;
+  --ring: #142C26;
 
   --radius: 0.375rem;
 
-  --sidebar-background: hsl(0 0% 98%);
-  --sidebar-foreground: hsl(156 33% 12%);
-  --sidebar-primary: hsl(156 33% 12%);
-  --sidebar-primary-foreground: hsl(0 0% 100%);
-  --sidebar-accent: hsl(40 20% 93%);
-  --sidebar-accent-foreground: hsl(156 33% 12%);
-  --sidebar-border: hsl(40 15% 87%);
-  --sidebar-ring: hsl(156 33% 12%);
+  --sidebar-background: #F1EEE3;
+  --sidebar-foreground: #142C26;
+  --sidebar-primary: #142C26;
+  --sidebar-primary-foreground: #FFFFFF;
+  --sidebar-accent: #E7E2D3;
+  --sidebar-accent-foreground: #142C26;
+  --sidebar-border: #E7E2D3;
+  --sidebar-ring: #142C26;
 
   /* Custom tokens */
-  --gold: hsl(44 33% 67%);
-  --cream: hsl(40 33% 97%);
-  --dark-green: hsl(156 33% 12%);
+  --gold: #CDBF8A;
+  --cream: #FAF9F5;
+  --dark-green: #142C26;
 
-  /* Green gradient — used for bold CTA sections */
-  --gradient-green: linear-gradient(135deg, hsl(156 40% 10%) 0%, hsl(156 33% 18%) 60%, hsl(156 28% 22%) 100%);
+  /* Green gradient — used for bold CTA sections. 135deg, primary(#001712) -> primary_container(#142C26) per DESIGN_SYSTEM.md */
+  --gradient-green: linear-gradient(135deg, #001712 0%, #142C26 55%, #1D3A32 100%);
+
+  /* Ambient tonal shadow — rgba(27,28,26,.06), 40px blur, 12px Y-offset, per the "No-Line Rule" */
+  --shadow-ambient: 0 12px 40px rgba(27, 28, 26, 0.06);
+  --shadow-ambient-lg: 0 20px 60px rgba(27, 28, 26, 0.1);
 }
 
 /* .dark {
@@ -196,6 +200,24 @@
   }
   .bg-gradient-green * {
     --foreground: hsl(0 0% 100%);
+  }
+  /* ── Ambient tonal elevation — replaces flat borders for "floating" cards ── */
+  .shadow-ambient {
+    box-shadow: var(--shadow-ambient);
+  }
+  .shadow-ambient-lg {
+    box-shadow: var(--shadow-ambient-lg);
+  }
+  /* ── Glass — for floating widgets over imagery (24px blur, 70% surface) ── */
+  .glass {
+    background: color-mix(in srgb, var(--card) 70%, transparent);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
+  }
+  .glass-dark {
+    background: color-mix(in srgb, var(--dark-green) 55%, transparent);
+    backdrop-filter: blur(24px);
+    -webkit-backdrop-filter: blur(24px);
   }
   .container {
     @apply w-full mx-auto px-4 sm:px-6 md:px-8 max-w-7xl;

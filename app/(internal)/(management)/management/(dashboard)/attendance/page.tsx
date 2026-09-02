@@ -78,7 +78,7 @@ export default function AttendancePage() {
     <div className="space-y-8">
       <PageHeader title="Attendance" subtitle="Clock in when you start, clock out when you're done." />
 
-      <div className="rounded-md bg-card p-8 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.08)] flex flex-col items-center text-center gap-6">
+      <div className="rounded-md bg-card p-8 shadow-ambient flex flex-col items-center text-center gap-6">
         <Clock className="h-8 w-8 text-gold" />
         <div>
           <p className="text-5xl font-bold text-foreground tabular-nums">

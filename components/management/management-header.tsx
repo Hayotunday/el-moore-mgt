@@ -19,7 +19,7 @@ export default function ManagementHeader() {
     .toUpperCase();
 
   return (
-    <header className="sticky top-0 z-50 flex w-full items-center justify-center border-b border-primary/10 bg-background/95 backdrop-blur supports-backdrop-filter:bg-background/80">
+    <header className="sticky top-0 z-50 flex w-full items-center justify-center bg-background/95 shadow-ambient backdrop-blur supports-backdrop-filter:bg-background/80">
       <div className="container flex h-16 items-center justify-between">
         <Link
           href="/management/overview"

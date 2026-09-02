@@ -114,7 +114,7 @@ export default function OverviewPage() {
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-[1.4fr_1fr] gap-6">
-        <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)]">
+        <div className="rounded-md bg-card p-6 shadow-ambient">
           <h2 className="text-lg font-semibold text-foreground mb-1">Today&apos;s Task Reports</h2>
           <p className="text-sm text-muted-foreground mb-5">
             What the team has logged so far today.
@@ -141,7 +141,7 @@ export default function OverviewPage() {
           </div>
         </div>
 
-        <div className="rounded-md bg-card p-6 shadow-[0_12px_40px_-8px_rgba(27,28,26,0.06)]">
+        <div className="rounded-md bg-card p-6 shadow-ambient">
           <h2 className="text-lg font-semibold text-foreground mb-1">Your Desks</h2>
           <p className="text-sm text-muted-foreground mb-5">
             Pages available to your role.

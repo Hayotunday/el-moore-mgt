@@ -46,6 +46,28 @@ export async function listPublicProperties(): Promise<Property[]> {
   return apiFetch<Property[]>("/properties/public");
 }
 
+/** Best-effort primary photo for a property card — falls back to null so a
+ * card can render a placeholder rather than fail the whole list. */
+export async function getPrimaryImageUrl(propertyId: string): Promise<string | null> {
+  try {
+    const images = await listPropertyImages(propertyId);
+    return images.find((img) => img.isPrimary)?.imageUrl ?? images[0]?.imageUrl ?? null;
+  } catch {
+    return null;
+  }
+}
+
+/** Batch-resolves a primary image per property — one call per property, run
+ * concurrently, so a listing grid never blocks entirely on one bad image. */
+export async function getPrimaryImages(
+  propertyIds: string[],
+): Promise<Map<string, string | null>> {
+  const entries = await Promise.all(
+    propertyIds.map(async (id) => [id, await getPrimaryImageUrl(id)] as const),
+  );
+  return new Map(entries);
+}
+
 export async function getProperty(id: string): Promise<Property> {
   return apiFetch<Property>(`/properties/${id}`);
 }

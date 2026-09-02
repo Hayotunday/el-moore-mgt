@@ -28,7 +28,7 @@ export default function MarketerSidebar() {
     <>
       {/* Desktop rail */}
       <aside
-        className="group hidden lg:flex flex-col fixed left-0 top-16 bottom-0 z-40 w-16 overflow-hidden bg-muted/70 transition-all duration-300 hover:w-64"
+        className="group hidden lg:flex flex-col fixed left-0 top-16 bottom-0 z-40 w-16 overflow-hidden bg-muted shadow-ambient transition-all duration-300 hover:w-64"
         aria-label="Marketer navigation"
       >
         <nav
