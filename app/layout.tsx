@@ -6,6 +6,10 @@ import Navbar from "@/components/navbar";
 import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/auth-context";
+import { AuthDrawerProvider } from "@/contexts/auth-drawer-context";
+import AuthDrawer from "@/components/auth-drawer";
+import { ConfirmDialogProvider } from "@/contexts/confirm-dialog-context";
+import ConfirmDialog from "@/components/confirm-dialog";
 import ReferralTracker from "@/components/referral-tracker";
 
 const axiforma = localFont({
@@ -51,14 +55,20 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
-        <AuthProvider>
-          <ReferralTracker />
-          <Navbar />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-          <Toaster />
+        <AuthProvider realm="storefront">
+          <AuthDrawerProvider>
+            <ConfirmDialogProvider>
+              <ReferralTracker />
+              <Navbar />
+              <main className="flex-1">
+                {children}
+              </main>
+              <Footer />
+              <AuthDrawer />
+              <ConfirmDialog />
+              <Toaster />
+            </ConfirmDialogProvider>
+          </AuthDrawerProvider>
         </AuthProvider>
       </body>
     </html>

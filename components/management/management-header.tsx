@@ -5,18 +5,14 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { ROLE_LABELS } from "@/lib/rbac";
 import { findPageForPath } from "@/lib/rbac";
+import { getFullName, getInitials } from "@/lib/utils";
 
 export default function ManagementHeader() {
   const pathname = usePathname();
   const { user } = useAuth();
   const currentPage = pathname ? findPageForPath(pathname) : undefined;
 
-  const initials = user?.name
-    ?.split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = user ? getInitials(user) : "";
 
   return (
     <header className="sticky top-0 z-50 flex w-full items-center justify-center bg-background/95 shadow-ambient backdrop-blur supports-backdrop-filter:bg-background/80">
@@ -37,19 +33,31 @@ export default function ManagementHeader() {
         </p>
 
         {user && (
-          <div className="flex items-center gap-3">
+          <Link
+            href="/management/account"
+            className="flex items-center gap-3 rounded-md px-2 py-1 -mr-2 hover:bg-muted/60 transition-colors"
+          >
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-foreground leading-tight">
-                {user.name}
+                {getFullName(user)}
               </p>
               <p className="text-[11px] text-muted-foreground leading-tight">
                 {ROLE_LABELS[user.role]}
               </p>
             </div>
-            <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-secondary-foreground text-xs font-bold">
-              {initials}
-            </div>
-          </div>
+            {user.avatarUrl ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img
+                src={user.avatarUrl}
+                alt={getFullName(user)}
+                className="h-9 w-9 rounded-full object-cover"
+              />
+            ) : (
+              <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-secondary-foreground text-xs font-bold">
+                {initials}
+              </div>
+            )}
+          </Link>
         )}
       </div>
     </header>

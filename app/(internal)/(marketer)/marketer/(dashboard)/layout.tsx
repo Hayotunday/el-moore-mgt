@@ -10,7 +10,7 @@ export default function MarketerDashboardLayout({ children }: { children: ReactN
   const { user, isLoading } = useAuth();
   const router = useRouter();
 
-  const isMarketer = user?.role === "EXTERNAL_MARKETER";
+  const isMarketer = user?.role === "AFFILIATE_MARKETER";
 
   useEffect(() => {
     if (isLoading) return;

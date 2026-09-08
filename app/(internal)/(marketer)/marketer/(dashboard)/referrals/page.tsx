@@ -46,7 +46,7 @@ export default function MarketerReferralsPage() {
     return referrals.filter((r) => {
       if (statusFilter !== "all" && r.status !== statusFilter) return false;
       if (q) {
-        const haystack = `${r.sale?.property?.title ?? ""} ${r.sale?.buyerName ?? ""} ${r.saleId}`.toLowerCase();
+        const haystack = `${r.sale?.property?.title ?? ""} ${r.saleId}`.toLowerCase();
         if (!haystack.includes(q)) return false;
       }
       return true;
@@ -87,7 +87,7 @@ export default function MarketerReferralsPage() {
       <SearchFilterBar
         searchValue={search}
         onSearchChange={setSearch}
-        searchPlaceholder="Search by property or buyer…"
+        searchPlaceholder="Search by property…"
         filters={[
           {
             key: "status",
@@ -105,20 +105,18 @@ export default function MarketerReferralsPage() {
       <DataTable>
         <DataTableHead>
           <DataTableHeadCell>Property</DataTableHeadCell>
-          <DataTableHeadCell>Buyer</DataTableHeadCell>
           <DataTableHeadCell align="right">Sale Amount</DataTableHeadCell>
           <DataTableHeadCell align="right">Commission</DataTableHeadCell>
           <DataTableHeadCell align="center">Status</DataTableHeadCell>
           <DataTableHeadCell align="right">Date</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={6} />}
+          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={5} />}
           {filtered.map((r, idx) => (
             <DataTableRow key={r.id} index={idx}>
               <DataTableCell className="font-medium">
                 {r.sale?.property?.title ?? `Sale ${r.saleId}`}
               </DataTableCell>
-              <DataTableCell>{r.sale?.buyerName ?? "—"}</DataTableCell>
               <DataTableCell align="right">
                 {r.sale?.totalAmount ? formatCurrency(r.sale.totalAmount) : "—"}
               </DataTableCell>

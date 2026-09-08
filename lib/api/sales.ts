@@ -1,4 +1,4 @@
-import { apiFetch, uploadToPresignedUrl } from "./client";
+import { apiFetch, uploadToPresignedUrl, toPublicR2Url, R2_PRIVATE_BASE_URL } from "./client";
 import { listProperties } from "./properties";
 import type {
   InstallmentPayment,
@@ -88,11 +88,11 @@ export async function getSale(id: string): Promise<Sale> {
   return apiFetch<Sale>(`/sales/${id}`);
 }
 
-/** TEAM_LEAD or OFFICE_ADMIN. Updates buyer info, sale type, amount, or assigned staff. */
+/** TEAM_LEAD or OFFICE_ADMIN. Updates buyer contact info, sale type, amount, or assigned
+ *  staff — the buyer's name itself now lives on their linked Customer record instead. */
 export async function updateSale(
   id: string,
   input: Partial<{
-    buyerName: string;
     buyerPhone: string;
     buyerEmail: string;
     saleType: SaleType;
@@ -103,19 +103,26 @@ export async function updateSale(
   return apiFetch<Sale>(`/sales/${id}`, { method: "PATCH", body: JSON.stringify(input) });
 }
 
-/** OFFICE_ADMIN only. Voids the sale and releases the property back to AVAILABLE. */
+/** OFFICE_ADMIN only. Soft-voids the sale (status: VOIDED — the record and its
+ *  finance/referral history are kept, not deleted) and releases the property back to
+ *  AVAILABLE. */
 export async function voidSale(id: string): Promise<void> {
   await apiFetch<void>(`/sales/${id}`, { method: "DELETE" });
 }
 
 /**
- * TEAM_LEAD or OFFICE_ADMIN. A property can only be sold once. Passing `marketerId`
- * attributes an external marketer to the sale, which auto-creates a referral.
+ * TEAM_LEAD or OFFICE_ADMIN. A property can only be sold once. Pass an existing
+ * `customerId` to attach a known buyer, or `buyerFirstName`/`buyerLastName` (+ optional
+ * `buyerMiddleName`) to auto-create a new Customer record from the sale. Passing
+ * `marketerId` attributes an affiliate marketer to the sale, which auto-creates a
+ * referral.
  */
 export async function createSale(input: {
   propertyId: string;
   customerId?: string;
-  buyerName: string;
+  buyerFirstName?: string;
+  buyerMiddleName?: string;
+  buyerLastName?: string;
   buyerPhone: string;
   buyerEmail?: string;
   saleType: SaleType;
@@ -180,7 +187,7 @@ export async function uploadSaleDocument(
   await uploadToPresignedUrl(uploadUrl, file);
   return apiFetch<SaleDocument>(`/sales/${saleId}/documents/${docId}/confirm`, {
     method: "POST",
-    body: JSON.stringify({ fileUrl: uploadUrl.split("?")[0] }),
+    body: JSON.stringify({ fileUrl: toPublicR2Url(uploadUrl, R2_PRIVATE_BASE_URL) }),
   });
 }
 

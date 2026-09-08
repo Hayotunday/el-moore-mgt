@@ -33,18 +33,25 @@ export async function getUser(id: string): Promise<ManagementUser> {
 }
 
 export async function createUser(input: {
-  name: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   email: string;
   password: string;
   role: Role;
 }): Promise<ManagementUser> {
-  return apiFetch<ManagementUser>("/users", { method: "POST", body: JSON.stringify(input) });
+  return apiFetch<ManagementUser>("/users", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 export async function updateUser(
   id: string,
   input: Partial<{
-    name: string;
+    firstName: string;
+    middleName: string;
+    lastName: string;
     email: string;
     password: string;
     role: Role;
@@ -64,7 +71,10 @@ export async function deactivateUser(id: string): Promise<void> {
 }
 
 /** MD or GM only. */
-export async function assignUserRole(id: string, role: Role): Promise<ManagementUser> {
+export async function assignUserRole(
+  id: string,
+  role: Role,
+): Promise<ManagementUser> {
   return apiFetch<ManagementUser>(`/users/${id}/role`, {
     method: "PATCH",
     body: JSON.stringify({ role }),
@@ -82,11 +92,18 @@ export async function setMarketerStatus(
   });
 }
 
-export async function uploadUserAvatar(id: string, file: File): Promise<string> {
-  const { uploadUrl, avatarUrl } = await apiFetch<{ uploadUrl: string; avatarUrl: string }>(
-    `/users/${id}/avatar`,
-    { method: "POST", body: JSON.stringify({ filename: file.name }) },
-  );
+export async function uploadUserAvatar(
+  id: string,
+  file: File,
+): Promise<string> {
+  const { uploadUrl, publicUrl } = await apiFetch<{
+    uploadUrl: string;
+    publicUrl: string;
+  }>(`/users/${id}/avatar`, {
+    method: "POST",
+    body: JSON.stringify({ filename: file.name }),
+  });
+  const avatarUrl = publicUrl;
   await uploadToPresignedUrl(uploadUrl, file);
   await apiFetch<void>(`/users/${id}/avatar/confirm`, {
     method: "POST",

@@ -1,5 +1,5 @@
 import { apiFetch, toQueryString } from "./client";
-import type { Customer, Sale } from "./types";
+import type { Customer, CustomerStage, Sale } from "./types";
 
 /** OFFICE_ADMIN, TEAM_LEAD, CUSTOMER_CARE, or ACCOUNTANT. */
 export async function listCustomers(search?: string): Promise<Customer[]> {
@@ -33,17 +33,28 @@ export async function getCustomer(id: string): Promise<Customer> {
 }
 
 export async function createCustomer(input: {
-  fullName: string;
+  firstName: string;
+  middleName?: string;
+  /** Null/omitted for companies. */
+  lastName?: string;
   phone: string;
   email?: string;
   dateOfBirth?: string;
+  interestedPropertyId?: string;
 }): Promise<Customer> {
   return apiFetch<Customer>("/customers", { method: "POST", body: JSON.stringify(input) });
 }
 
 export async function updateCustomer(
   id: string,
-  input: Partial<Pick<Customer, "fullName" | "phone" | "email" | "dateOfBirth">>,
+  input: Partial<{
+    firstName: string;
+    middleName: string;
+    lastName: string;
+    phone: string;
+    email: string;
+    dateOfBirth: string;
+  }>,
 ): Promise<Customer> {
   return apiFetch<Customer>(`/customers/${id}`, {
     method: "PATCH",
@@ -54,6 +65,17 @@ export async function updateCustomer(
 /** OFFICE_ADMIN only. */
 export async function deleteCustomer(id: string): Promise<void> {
   await apiFetch<void>(`/customers/${id}`, { method: "DELETE" });
+}
+
+/**
+ * MD, GM, or CUSTOMER_CARE. Manual override of a customer's lifecycle stage — can move
+ * in either direction, unlike the automatic transitions (which only move forward as
+ * milestones happen: site inspection completed → LEAD, first purchase → CLIENT, etc.).
+ */
+export async function updateCustomerStage(id: string, stage: CustomerStage): Promise<Customer> {
+  return apiFetch<Customer>(`/customers/${id}/stage${toQueryString({ stage })}`, {
+    method: "PATCH",
+  });
 }
 
 /**

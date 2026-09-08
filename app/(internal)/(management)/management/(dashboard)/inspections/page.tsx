@@ -28,18 +28,20 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerBody,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { listInspections, scheduleInspection, updateInspection } from "@/lib/api/site-inspections";
 import { listCustomers } from "@/lib/api/customers";
 import { listProperties } from "@/lib/api/properties";
 import { listUsers } from "@/lib/api/users";
 import type { Customer, ManagementUser, Property, SiteInspection } from "@/lib/api/types";
+import { blurActiveElement, getFullName } from "@/lib/utils";
 
 const EMPTY_FORM = { customerId: "", propertyId: "", scheduledAt: "", inspectorId: "", notes: "" };
 
@@ -90,7 +92,8 @@ export default function InspectionsPage() {
     return inspections.filter((i) => {
       if (statusFilter !== "all" && i.status !== statusFilter) return false;
       if (q) {
-        const customerName = (i.customerId && customerById.get(i.customerId)?.fullName.toLowerCase()) ?? "";
+        const customerFound = i.customerId ? customerById.get(i.customerId) : undefined;
+        const customerName = customerFound ? getFullName(customerFound).toLowerCase() : "";
         const propertyTitle = propertyById.get(i.propertyId)?.title.toLowerCase() ?? "";
         if (!customerName.includes(q) && !propertyTitle.includes(q)) return false;
       }
@@ -145,7 +148,12 @@ export default function InspectionsPage() {
         title="Site Inspections"
         subtitle="Scheduled land and property inspections for prospective buyers."
         action={
-          <Button onClick={() => setDialogOpen(true)}>
+          <Button
+            onClick={() => {
+              blurActiveElement();
+              setDialogOpen(true);
+            }}
+          >
             <Plus className="h-4 w-4" /> Schedule Inspection
           </Button>
         }
@@ -205,7 +213,7 @@ export default function InspectionsPage() {
             return (
               <DataTableRow key={inspection.id} index={idx}>
                 <DataTableCell>
-                  <p className="font-medium">{customer?.fullName ?? "—"}</p>
+                  <p className="font-medium">{customer ? getFullName(customer) : "—"}</p>
                   <p className="text-xs text-muted-foreground">{customer?.phone}</p>
                 </DataTableCell>
                 <DataTableCell>{property?.title ?? "Unknown property"}</DataTableCell>
@@ -215,7 +223,7 @@ export default function InspectionsPage() {
                     timeStyle: "short",
                   })}
                 </DataTableCell>
-                <DataTableCell>{inspector?.name ?? "—"}</DataTableCell>
+                <DataTableCell>{inspector ? getFullName(inspector) : "—"}</DataTableCell>
                 <DataTableCell align="center">
                   <StatusBadge status={inspection.status} />
                 </DataTableCell>
@@ -259,13 +267,13 @@ export default function InspectionsPage() {
         </DataTableBody>
       </DataTable>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogDescription className="invisible">Site Inspections</DialogDescription>
-        <DialogContent className="sm:max-w-lg">
-          <DialogHeader>
-            <DialogTitle>Schedule Inspection</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
+      <Drawer open={dialogOpen} onOpenChange={setDialogOpen} direction="right">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Schedule Inspection</DrawerTitle>
+            <DrawerDescription>Book a land or property visit for a prospective buyer.</DrawerDescription>
+          </DrawerHeader>
+          <DrawerBody className="space-y-4">
             <div className="grid gap-2">
               <Label>Property</Label>
               <Select value={form.propertyId} onValueChange={(v) => setForm((f) => ({ ...f, propertyId: v }))}>
@@ -293,7 +301,7 @@ export default function InspectionsPage() {
                 <SelectContent>
                   {customers.map((c) => (
                     <SelectItem key={c.id} value={c.id}>
-                      {c.fullName}
+                      {getFullName(c)}
                     </SelectItem>
                   ))}
                 </SelectContent>
@@ -320,7 +328,7 @@ export default function InspectionsPage() {
                   <SelectContent>
                     {staff.map((s) => (
                       <SelectItem key={s.id} value={s.id}>
-                        {s.name}
+                        {getFullName(s)}
                       </SelectItem>
                     ))}
                   </SelectContent>
@@ -336,17 +344,17 @@ export default function InspectionsPage() {
                 placeholder="Customer interested in duplex, preferred morning slot"
               />
             </div>
-          </div>
-          <DialogFooter>
+          </DrawerBody>
+          <DrawerFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSchedule} disabled={saving}>
               {saving ? "Scheduling…" : "Schedule Inspection"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

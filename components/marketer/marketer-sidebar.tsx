@@ -7,6 +7,7 @@ import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { ROLE_LABELS } from "@/lib/rbac";
 import { MARKETER_NAV } from "./marketer-nav";
+import { getFullName } from "@/lib/utils";
 
 export default function MarketerSidebar() {
   const pathname = usePathname();
@@ -89,7 +90,7 @@ export default function MarketerSidebar() {
             <div className="flex items-center justify-between px-4 py-4">
               <div>
                 <p className="text-base font-semibold text-foreground">
-                  {user ? user.name : "Marketer Portal"}
+                  {user ? getFullName(user) : "Marketer Portal"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {user ? ROLE_LABELS[user.role] : "Navigate the portal"}

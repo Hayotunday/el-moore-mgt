@@ -1,4 +1,10 @@
-import { apiFetch, toQueryString, uploadToPresignedUrl } from "./client";
+import {
+  apiFetch,
+  toQueryString,
+  uploadToPresignedUrl,
+  toPublicR2Url,
+  R2_PUBLIC_BASE_URL,
+} from "./client";
 import type { Property, PropertyImage, PropertyStatus, Sale } from "./types";
 
 export interface PropertyWithSale extends Property {
@@ -16,7 +22,9 @@ export function joinSaleToProperties(
   }));
 }
 
-export async function listProperties(status?: PropertyStatus): Promise<Property[]> {
+export async function listProperties(
+  status?: PropertyStatus,
+): Promise<Property[]> {
   return apiFetch<Property[]>(`/properties${toQueryString({ status })}`);
 }
 
@@ -48,10 +56,16 @@ export async function listPublicProperties(): Promise<Property[]> {
 
 /** Best-effort primary photo for a property card — falls back to null so a
  * card can render a placeholder rather than fail the whole list. */
-export async function getPrimaryImageUrl(propertyId: string): Promise<string | null> {
+export async function getPrimaryImageUrl(
+  propertyId: string,
+): Promise<string | null> {
   try {
     const images = await listPropertyImages(propertyId);
-    return images.find((img) => img.isPrimary)?.imageUrl ?? images[0]?.imageUrl ?? null;
+    return (
+      images.find((img) => img.isPrimary)?.imageUrl ??
+      images[0]?.imageUrl ??
+      null
+    );
   } catch {
     return null;
   }
@@ -79,7 +93,10 @@ export async function createProperty(input: {
   price: string;
   status?: PropertyStatus;
 }): Promise<Property> {
-  return apiFetch<Property>("/properties", { method: "POST", body: JSON.stringify(input) });
+  return apiFetch<Property>("/properties", {
+    method: "POST",
+    body: JSON.stringify(input),
+  });
 }
 
 /** OFFICE_ADMIN only. */
@@ -98,31 +115,58 @@ export async function deleteProperty(id: string): Promise<void> {
   await apiFetch<void>(`/properties/${id}`, { method: "DELETE" });
 }
 
-export async function listPropertyImages(propertyId: string): Promise<PropertyImage[]> {
+export async function listPropertyImages(
+  propertyId: string,
+): Promise<PropertyImage[]> {
   return apiFetch<PropertyImage[]>(`/properties/${propertyId}/images`);
 }
 
 /** OFFICE_ADMIN only. Uploads a file to R2 via a presigned URL, then confirms it. */
-export async function uploadPropertyImage(propertyId: string, file: File): Promise<PropertyImage> {
-  const { uploadUrl, imageId } = await apiFetch<{ uploadUrl: string; imageId: string }>(
-    `/properties/${propertyId}/images`,
-    { method: "POST", body: JSON.stringify({ filename: file.name, contentType: file.type }) },
-  );
-  await uploadToPresignedUrl(uploadUrl, file);
-  return apiFetch<PropertyImage>(`/properties/${propertyId}/images/${imageId}/confirm`, {
+export async function uploadPropertyImage(
+  propertyId: string,
+  file: File,
+): Promise<PropertyImage> {
+  const {
+    uploadUrl,
+    image: { id },
+  } = await apiFetch<{
+    uploadUrl: string;
+    image: { id: string };
+  }>(`/properties/${propertyId}/images`, {
     method: "POST",
-    body: JSON.stringify({ imageUrl: uploadUrl.split("?")[0] }),
+    body: JSON.stringify({ filename: file.name, contentType: file.type }),
   });
+  await uploadToPresignedUrl(uploadUrl, file);
+  return apiFetch<PropertyImage>(
+    `/properties/${propertyId}/images/${id}/confirm`,
+    {
+      method: "POST",
+      body: JSON.stringify({
+        imageUrl: toPublicR2Url(uploadUrl, R2_PUBLIC_BASE_URL),
+      }),
+    },
+  );
 }
 
 /** OFFICE_ADMIN only. */
-export async function setPrimaryPropertyImage(propertyId: string, imageId: string): Promise<void> {
-  await apiFetch<void>(`/properties/${propertyId}/images/${imageId}/set-primary`, {
-    method: "PATCH",
-  });
+export async function setPrimaryPropertyImage(
+  propertyId: string,
+  imageId: string,
+): Promise<void> {
+  await apiFetch<void>(
+    `/properties/${propertyId}/images/${imageId}/set-primary`,
+    {
+      method: "PATCH",
+    },
+  );
 }
 
 /** OFFICE_ADMIN only. */
-export async function removePropertyImage(propertyId: string, imageId: string): Promise<void> {
-  await apiFetch<void>(`/properties/${propertyId}/images/${imageId}`, { method: "DELETE" });
+export async function removePropertyImage(
+  propertyId: string,
+  imageId: string,
+): Promise<void> {
+  await apiFetch<void>(`/properties/${propertyId}/images/${imageId}`, {
+    method: "DELETE",
+  });
 }

@@ -10,10 +10,11 @@ import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
 import { updateUser, uploadUserAvatar, removeUserAvatar } from "@/lib/api/users";
 import { ROLE_LABELS } from "@/lib/rbac";
+import { getFullName, getInitials } from "@/lib/utils";
 
 export default function MarketerSettingsPage() {
   const { user, refreshProfile } = useAuth();
-  const [profileForm, setProfileForm] = useState({ name: "", email: "" });
+  const [profileForm, setProfileForm] = useState({ firstName: "", middleName: "", lastName: "", email: "" });
   const [savingProfile, setSavingProfile] = useState(false);
 
   const [password, setPassword] = useState("");
@@ -22,18 +23,30 @@ export default function MarketerSettingsPage() {
   const [avatarBusy, setAvatarBusy] = useState(false);
 
   useEffect(() => {
-    if (user) setProfileForm({ name: user.name, email: user.email });
+    if (user) {
+      setProfileForm({
+        firstName: user.firstName,
+        middleName: user.middleName ?? "",
+        lastName: user.lastName,
+        email: user.email,
+      });
+    }
   }, [user]);
 
   const handleSaveProfile = async () => {
     if (!user) return;
-    if (!profileForm.name || !profileForm.email) {
-      toast.error("Name and email are required.");
+    if (!profileForm.firstName || !profileForm.lastName || !profileForm.email) {
+      toast.error("First name, last name and email are required.");
       return;
     }
     setSavingProfile(true);
     try {
-      await updateUser(user.id, { name: profileForm.name, email: profileForm.email });
+      await updateUser(user.id, {
+        firstName: profileForm.firstName,
+        middleName: profileForm.middleName || undefined,
+        lastName: profileForm.lastName,
+        email: profileForm.email,
+      });
       await refreshProfile();
       toast.success("Profile updated.");
     } catch (err) {
@@ -106,14 +119,9 @@ export default function MarketerSettingsPage() {
         <div className="flex items-center gap-4">
           <div className="flex h-16 w-16 shrink-0 items-center justify-center overflow-hidden rounded-full bg-gold text-secondary-foreground text-lg font-bold">
             {user.avatarUrl ? (
-              <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+              <img src={user.avatarUrl} alt={getFullName(user)} className="h-full w-full object-cover" />
             ) : (
-              user.name
-                .split(" ")
-                .map((p) => p[0])
-                .slice(0, 2)
-                .join("")
-                .toUpperCase()
+              getInitials(user)
             )}
           </div>
           <div className="flex gap-2">
@@ -144,10 +152,24 @@ export default function MarketerSettingsPage() {
         </h2>
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
-            <Label>Full Name</Label>
+            <Label>First Name</Label>
             <Input
-              value={profileForm.name}
-              onChange={(e) => setProfileForm((f) => ({ ...f, name: e.target.value }))}
+              value={profileForm.firstName}
+              onChange={(e) => setProfileForm((f) => ({ ...f, firstName: e.target.value }))}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>Last Name</Label>
+            <Input
+              value={profileForm.lastName}
+              onChange={(e) => setProfileForm((f) => ({ ...f, lastName: e.target.value }))}
+            />
+          </div>
+          <div className="grid gap-2">
+            <Label>Middle Name (optional)</Label>
+            <Input
+              value={profileForm.middleName}
+              onChange={(e) => setProfileForm((f) => ({ ...f, middleName: e.target.value }))}
             />
           </div>
           <div className="grid gap-2">

@@ -5,9 +5,10 @@
  * are kept as `string` here — convert with `Number()` at the point of use.
  */
 
-// Full role enum as returned by the backend. Only the first 7 are "management" roles
-// with access to /management/**; INTERNAL_MARKETER/EXTERNAL_MARKETER use /marketer,
-// and "basic" is a plain public account.
+// Full role enum as returned by the backend. Only the first 8 are "management" roles
+// with access to /management/**; INTERNAL_MARKETER/AFFILIATE_MARKETER use /marketer,
+// and "basic" is a plain public account. AFFILIATE_MARKETER was renamed from
+// EXTERNAL_MARKETER (naming only); PROJECT_MANAGER is new, for the Projects module.
 export type Role =
   | "MD"
   | "GM"
@@ -16,15 +17,23 @@ export type Role =
   | "TEAM_LEAD"
   | "ACCOUNTANT"
   | "CUSTOMER_CARE"
+  | "PROJECT_MANAGER"
   | "INTERNAL_MARKETER"
-  | "EXTERNAL_MARKETER"
+  | "AFFILIATE_MARKETER"
   | "basic";
 
 export type MarketerStatus = "PENDING" | "APPROVED" | "REJECTED";
 
-export interface ManagementUser {
+/** Names are split into parts across the backend now (was a single `name` field) —
+ *  use `getFullName()` from lib/utils to render them as one string. */
+export interface PersonName {
+  firstName: string;
+  middleName?: string | null;
+  lastName: string;
+}
+
+export interface ManagementUser extends PersonName {
   id: string;
-  name: string;
   email: string;
   role: Role;
   isActive: boolean;
@@ -41,6 +50,9 @@ export interface Property {
   location: string;
   price: string;
   status: PropertyStatus;
+  /** Links this property to a construction Project (see lib/api/projects.ts) — not
+   *  every property belongs to one, e.g. standalone land/resale units. */
+  projectId?: string | null;
   createdAt?: string;
 }
 
@@ -52,16 +64,29 @@ export interface PropertyImage {
 }
 
 export type SaleType = "OUTRIGHT" | "INSTALLMENT";
+export type SaleStatus = "ACTIVE" | "VOIDED";
 
 export interface Sale {
   id: string;
   propertyId: string;
   customerId?: string | null;
-  buyerName: string;
+  /** Present when the sale was recorded before a Customer record existed for the
+   *  buyer, or as a fallback display. Prefer looking up the linked Customer via
+   *  `customerId` for the buyer's name — these are direct-entry fields on the sale
+   *  itself and won't reflect later edits to the customer's own record. */
+  buyerFirstName?: string | null;
+  buyerMiddleName?: string | null;
+  buyerLastName?: string | null;
+  /** @deprecated superseded by buyerFirstName/buyerMiddleName/buyerLastName — the
+   *  backend may still return this on older records. */
+  buyerName?: string | null;
   buyerPhone: string;
   buyerEmail?: string | null;
   saleType: SaleType;
   totalAmount: string;
+  /** Voiding a sale is now a soft flag (record + finance/referral history is kept)
+   *  rather than a hard delete — a voided sale still appears in listSales(). */
+  status?: SaleStatus;
   soldById?: string | null;
   marketerId?: string | null;
   createdAt: string;
@@ -107,11 +132,10 @@ export interface Referral {
   sale?: {
     id: string;
     propertyId: string;
-    buyerName: string;
     totalAmount: string;
     property?: { title: string };
   };
-  marketer?: { id: string; name: string; email: string };
+  marketer?: PersonName & { id: string; email: string };
 }
 
 export type TransactionType = "INCOME" | "EXPENSE";
@@ -198,12 +222,20 @@ export interface ChatMessage {
   sentAt?: string;
 }
 
-export interface Customer {
+/** Prospect (info + interest captured) → Lead (site inspection completed) → Client
+ *  (first purchase) → Customer (second+ purchase). Auto-upgraded on milestones;
+ *  MD/GM/CUSTOMER_CARE can also manually override in either direction. */
+export type CustomerStage = "PROSPECT" | "LEAD" | "CLIENT" | "CUSTOMER";
+
+export interface Customer extends Omit<PersonName, "lastName"> {
   id: string;
-  fullName: string;
+  /** Null for companies. */
+  lastName?: string | null;
   phone: string;
   email?: string | null;
   dateOfBirth?: string | null;
+  stage?: CustomerStage;
+  interestedPropertyId?: string | null;
   createdAt?: string;
 }
 
@@ -236,4 +268,81 @@ export interface Invite {
   status?: InviteStatus;
   expiresAt?: string;
   createdAt?: string;
+}
+
+/* ---------- Projects (construction progress tracking) ---------- */
+
+export type ProjectStatus = "PLANNING" | "IN_PROGRESS" | "COMPLETED" | "ON_HOLD";
+
+export interface Project {
+  id: string;
+  name: string;
+  location: string;
+  description?: string | null;
+  status: ProjectStatus;
+  overallProgressPercent: number;
+  budgetAllocated?: string | null;
+  startDate?: string | null;
+  expectedCompletionDate?: string | null;
+  createdAt?: string;
+}
+
+export interface ProjectBudgetSummary {
+  budgetAllocated: string;
+  spent: string;
+  remaining: string;
+}
+
+export type WorkItemStatus = "NOT_STARTED" | "IN_PROGRESS" | "COMPLETED" | "DELAYED";
+
+export interface WorkItem {
+  id: string;
+  projectId: string;
+  name: string;
+  progressPercent: number;
+  status: WorkItemStatus;
+  contractorId?: string | null;
+  expectedCompletionDate?: string | null;
+  latestUpdate?: string | null;
+}
+
+export interface ProjectIssue {
+  id: string;
+  projectId: string;
+  workItemId?: string | null;
+  description: string;
+  resolvedAt?: string | null;
+  createdAt?: string;
+}
+
+export interface ProjectUpdate {
+  id: string;
+  projectId: string;
+  workItemId?: string | null;
+  note: string;
+  visibleToCustomers: boolean;
+  createdAt?: string;
+}
+
+export interface ProjectPhoto {
+  id: string;
+  projectId: string;
+  photoUrl: string;
+  visibleToCustomers: boolean;
+  createdAt?: string;
+}
+
+export interface ProjectDetail extends Project {
+  workItems: WorkItem[];
+  issues: ProjectIssue[];
+  updates: ProjectUpdate[];
+  photos: ProjectPhoto[];
+}
+
+export interface Contractor {
+  id: string;
+  name: string;
+  contactPhone?: string | null;
+  contactEmail?: string | null;
+  specialty?: string | null;
 }

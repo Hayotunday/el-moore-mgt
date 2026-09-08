@@ -12,6 +12,7 @@ import {
   FileText,
   DollarSign,
   MapPinned,
+  HardHat,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/api/types";
@@ -27,9 +28,11 @@ export const MANAGEMENT_ROLES: Role[] = [
   "TEAM_LEAD",
   "ACCOUNTANT",
   "CUSTOMER_CARE",
+  "PROJECT_MANAGER",
 ];
 
-/** Every role the backend knows about, for display purposes (e.g. a user's role badge). */
+/** Every role the backend knows about, for display purposes (e.g. a user's role badge).
+ *  AFFILIATE_MARKETER was renamed from EXTERNAL_MARKETER (naming only, same behavior). */
 export const ROLE_LABELS: Record<Role, string> = {
   MD: "Managing Director",
   GM: "General Manager",
@@ -38,8 +41,9 @@ export const ROLE_LABELS: Record<Role, string> = {
   TEAM_LEAD: "Team Lead",
   ACCOUNTANT: "Accountant",
   CUSTOMER_CARE: "Customer Care",
+  PROJECT_MANAGER: "Project Manager",
   INTERNAL_MARKETER: "Internal Marketer",
-  EXTERNAL_MARKETER: "External Marketer",
+  AFFILIATE_MARKETER: "Affiliate Marketer",
   basic: "Basic Account",
 };
 
@@ -56,7 +60,8 @@ export type PageKey =
   | "hr"
   | "attendance"
   | "daily-report"
-  | "finance";
+  | "finance"
+  | "projects";
 
 export interface PageDefinition {
   key: PageKey;
@@ -130,7 +135,14 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/customers",
     description: "Buyer records",
     icon: Users,
-    roles: ["MD", "GM", "OFFICE_ADMIN", "TEAM_LEAD", "CUSTOMER_CARE", "ACCOUNTANT"],
+    roles: [
+      "MD",
+      "GM",
+      "OFFICE_ADMIN",
+      "TEAM_LEAD",
+      "CUSTOMER_CARE",
+      "ACCOUNTANT",
+    ],
   },
   {
     key: "users",
@@ -154,7 +166,14 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/attendance",
     description: "Clock in / clock out",
     icon: Clock,
-    roles: [...MANAGEMENT_ROLES],
+    roles: [
+      "OFFICE_ADMIN",
+      "SITE_COORDINATOR",
+      "TEAM_LEAD",
+      "ACCOUNTANT",
+      "CUSTOMER_CARE",
+      "PROJECT_MANAGER",
+    ],
   },
   {
     key: "daily-report",
@@ -172,9 +191,19 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     icon: DollarSign,
     roles: ["MD", "GM", "OFFICE_ADMIN", "ACCOUNTANT"],
   },
+  {
+    key: "projects",
+    label: "Projects",
+    path: "/management/projects",
+    description: "Construction progress & work items",
+    icon: HardHat,
+    roles: ["MD", "GM", "PROJECT_MANAGER"],
+  },
 ];
 
-export function getPagesForRole(role: Role | undefined | null): PageDefinition[] {
+export function getPagesForRole(
+  role: Role | undefined | null,
+): PageDefinition[] {
   if (!role) return [];
   return PAGE_REGISTRY.filter((page) => page.roles.includes(role));
 }
@@ -185,7 +214,10 @@ export function findPageForPath(pathname: string): PageDefinition | undefined {
   );
 }
 
-export function canAccessPath(role: Role | undefined | null, pathname: string): boolean {
+export function canAccessPath(
+  role: Role | undefined | null,
+  pathname: string,
+): boolean {
   const page = findPageForPath(pathname);
   if (!page) return true;
   if (!role) return false;

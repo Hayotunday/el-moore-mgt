@@ -20,7 +20,7 @@ import { getAllAttendance } from "@/lib/api/attendance";
 import { getAllReports } from "@/lib/api/daily-reports";
 import type { AttendanceRecord, DailyTaskReport, ManagementUser } from "@/lib/api/types";
 import { ROLE_LABELS } from "@/lib/rbac";
-import { formatDate } from "@/lib/utils";
+import { formatDate, getFullName } from "@/lib/utils";
 
 export default function HrPage() {
   const [users, setUsers] = useState<ManagementUser[]>([]);
@@ -55,7 +55,7 @@ export default function HrPage() {
   const filteredStaff = useMemo(() => {
     const q = search.trim().toLowerCase();
     if (!q) return users;
-    return users.filter((u) => u.name.toLowerCase().includes(q));
+    return users.filter((u) => getFullName(u).toLowerCase().includes(q));
   }, [users, search]);
 
   const todayStr = new Date().toISOString().slice(0, 10);
@@ -92,7 +92,7 @@ export default function HrPage() {
             label: "Staff",
             value: selectedStaffId,
             onChange: setSelectedStaffId,
-            options: filteredStaff.map((u) => ({ label: u.name, value: u.id })),
+            options: filteredStaff.map((u) => ({ label: getFullName(u), value: u.id })),
           },
         ]}
       />
@@ -111,7 +111,7 @@ export default function HrPage() {
               const today = attendance.find((a) => a.staffId === u.id && a.date === todayStr);
               return (
                 <DataTableRow key={u.id} index={idx}>
-                  <DataTableCell className="font-medium">{u.name}</DataTableCell>
+                  <DataTableCell className="font-medium">{getFullName(u)}</DataTableCell>
                   <DataTableCell>{ROLE_LABELS[u.role]}</DataTableCell>
                   <DataTableCell align="center">
                     {today ? (today.clockOut ? "Clocked out" : "Clocked in") : "Not clocked in"}

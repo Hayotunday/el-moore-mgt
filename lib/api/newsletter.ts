@@ -1,4 +1,4 @@
-import { apiFetch, uploadToPresignedUrl } from "./client";
+import { apiFetch, uploadToPresignedUrl, toPublicR2Url, R2_PUBLIC_BASE_URL } from "./client";
 import { delay, automatedGreetingSettings } from "./mock-store";
 import type { AutomatedGreetingSettings, NewsletterCampaign, NewsletterSubscriber } from "./types";
 
@@ -54,7 +54,7 @@ export async function uploadCampaignCoverImage(id: string, file: File): Promise<
     { method: "PATCH", body: JSON.stringify({ filename: file.name }) },
   );
   await uploadToPresignedUrl(uploadUrl, file);
-  const coverImageUrl = uploadUrl.split("?")[0];
+  const coverImageUrl = toPublicR2Url(uploadUrl, R2_PUBLIC_BASE_URL);
   await apiFetch<void>(`/newsletter/campaigns/${id}/cover-image/confirm`, {
     method: "POST",
     body: JSON.stringify({ coverImageUrl }),

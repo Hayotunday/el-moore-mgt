@@ -8,13 +8,20 @@ import ScrollReveal from "@/components/scroll-reveal";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { registerExternalMarketer, verifyCode, resendVerification } from "@/lib/api/auth";
+import { registerAffiliateMarketer, verifyCode, resendVerification } from "@/lib/api/auth";
 
 type Step = "form" | "verify" | "done";
 
 export default function MarketerRegisterPage() {
   const [step, setStep] = useState<Step>("form");
-  const [form, setForm] = useState({ name: "", email: "", password: "", confirmPassword: "" });
+  const [form, setForm] = useState({
+    firstName: "",
+    middleName: "",
+    lastName: "",
+    email: "",
+    password: "",
+    confirmPassword: "",
+  });
   const [code, setCode] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -35,8 +42,10 @@ export default function MarketerRegisterPage() {
 
     setSubmitting(true);
     try {
-      await registerExternalMarketer({
-        name: form.name,
+      await registerAffiliateMarketer({
+        firstName: form.firstName,
+        middleName: form.middleName || undefined,
+        lastName: form.lastName,
         email: form.email,
         password: form.password,
       });
@@ -97,16 +106,36 @@ export default function MarketerRegisterPage() {
               </div>
 
               <form onSubmit={handleRegister} className="space-y-4">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-2">
+                    <Label htmlFor="firstName" className="flex items-center gap-2">
+                      <User className="h-4 w-4" /> First Name
+                    </Label>
+                    <Input
+                      id="firstName"
+                      required
+                      value={form.firstName}
+                      onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                      placeholder="Jane"
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <Label htmlFor="lastName">Last Name</Label>
+                    <Input
+                      id="lastName"
+                      required
+                      value={form.lastName}
+                      onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                      placeholder="Doe"
+                    />
+                  </div>
+                </div>
                 <div className="space-y-2">
-                  <Label htmlFor="name" className="flex items-center gap-2">
-                    <User className="h-4 w-4" /> Full Name
-                  </Label>
+                  <Label htmlFor="middleName">Middle Name (optional)</Label>
                   <Input
-                    id="name"
-                    required
-                    value={form.name}
-                    onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
-                    placeholder="Jane Doe"
+                    id="middleName"
+                    value={form.middleName}
+                    onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
                   />
                 </div>
                 <div className="space-y-2">

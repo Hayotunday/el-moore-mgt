@@ -22,13 +22,14 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerBody,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import {
   listAllPosts,
   createPost,
@@ -38,7 +39,7 @@ import {
   uploadPostCoverImage,
 } from "@/lib/api/blog";
 import type { BlogPost } from "@/lib/api/types";
-import { formatDate } from "@/lib/utils";
+import { blurActiveElement, formatDate } from "@/lib/utils";
 
 const EMPTY_FORM = { title: "", slug: "", content: "", published: false };
 
@@ -77,6 +78,7 @@ export default function BlogPage() {
   }, [posts, search]);
 
   const openNew = () => {
+    blurActiveElement();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setCoverFile(null);
@@ -84,6 +86,7 @@ export default function BlogPage() {
   };
 
   const openEdit = (post: BlogPost) => {
+    blurActiveElement();
     setEditingId(post.id);
     setForm({
       title: post.title,
@@ -243,13 +246,13 @@ export default function BlogPage() {
         </DataTableBody>
       </DataTable>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogDescription className="invisible">Blog</DialogDescription>
-        <DialogContent className="sm:max-w-xl">
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Post" : "New Post"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
+      <Drawer open={dialogOpen} onOpenChange={setDialogOpen} direction="right">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{editingId ? "Edit Post" : "New Post"}</DrawerTitle>
+            <DrawerDescription>Write and publish an article to the public El-Moore blog.</DrawerDescription>
+          </DrawerHeader>
+          <DrawerBody className="space-y-4">
             <div className="grid gap-2">
               <Label>Title</Label>
               <Input
@@ -306,17 +309,17 @@ export default function BlogPage() {
                 }
               />
             </div>
-          </div>
-          <DialogFooter>
+          </DrawerBody>
+          <DrawerFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving…" : "Save Post"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

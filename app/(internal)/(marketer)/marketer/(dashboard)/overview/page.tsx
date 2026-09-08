@@ -12,7 +12,7 @@ import { useAuth } from "@/contexts/auth-context";
 import { listMyReferrals } from "@/lib/api/referrals";
 import { buildReferralLink } from "@/lib/referral";
 import type { Referral } from "@/lib/api/types";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, getShortName } from "@/lib/utils";
 
 export default function MarketerOverviewPage() {
   const { user } = useAuth();
@@ -66,7 +66,7 @@ export default function MarketerOverviewPage() {
     <div className="space-y-8">
       <PageHeader
         eyebrow="El-Moore Marketer"
-        title={`Welcome back, ${user?.name.split(" ")[0] ?? ""}`}
+        title={`Welcome back, ${user ? getShortName(user) || "there" : "there"}`}
         subtitle="Here's how your referrals are performing."
       />
 
@@ -140,7 +140,7 @@ export default function MarketerOverviewPage() {
             >
               <div className="min-w-0">
                 <p className="text-sm font-medium text-foreground truncate">
-                  {r.sale?.property?.title ?? r.sale?.buyerName ?? `Sale ${r.saleId}`}
+                  {r.sale?.property?.title ?? `Sale ${r.saleId}`}
                 </p>
                 <p className="text-xs text-muted-foreground">{formatDate(r.createdAt)}</p>
               </div>

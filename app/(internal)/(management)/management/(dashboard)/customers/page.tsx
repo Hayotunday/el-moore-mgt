@@ -19,25 +19,37 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerBody,
+  DrawerFooter,
+} from "@/components/ui/drawer";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import StatusBadge from "@/components/management/status-badge";
 import {
   listCustomers,
   createCustomer,
   updateCustomer,
+  updateCustomerStage,
   deleteCustomer,
   getCustomerSales,
 } from "@/lib/api/customers";
 import { listProperties } from "@/lib/api/properties";
-import type { Customer, Property, Sale } from "@/lib/api/types";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import type { Customer, CustomerStage, Property, Sale } from "@/lib/api/types";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
+import { blurActiveElement, formatCurrency, formatDate, getFullName } from "@/lib/utils";
 
-const EMPTY_FORM = { fullName: "", phone: "", email: "", dateOfBirth: "" };
+const EMPTY_FORM = { firstName: "", middleName: "", lastName: "", phone: "", email: "", dateOfBirth: "" };
+const STAGES: CustomerStage[] = ["PROSPECT", "LEAD", "CLIENT", "CUSTOMER"];
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
@@ -51,6 +63,8 @@ export default function CustomersPage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const [stageBusyId, setStageBusyId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -90,15 +104,19 @@ export default function CustomersPage() {
   );
 
   const openNew = () => {
+    blurActiveElement();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setDialogOpen(true);
   };
 
   const openEdit = (customer: Customer) => {
+    blurActiveElement();
     setEditingId(customer.id);
     setForm({
-      fullName: customer.fullName,
+      firstName: customer.firstName,
+      middleName: customer.middleName ?? "",
+      lastName: customer.lastName ?? "",
       phone: customer.phone,
       email: customer.email ?? "",
       dateOfBirth: customer.dateOfBirth ?? "",
@@ -107,13 +125,15 @@ export default function CustomersPage() {
   };
 
   const handleSave = async () => {
-    if (!form.fullName || !form.phone) {
-      toast.error("Full name and phone are required.");
+    if (!form.firstName || !form.phone) {
+      toast.error("First name and phone are required.");
       return;
     }
     setSaving(true);
     const payload = {
-      fullName: form.fullName,
+      firstName: form.firstName,
+      middleName: form.middleName || undefined,
+      lastName: form.lastName || undefined,
       phone: form.phone,
       email: form.email || undefined,
       dateOfBirth: form.dateOfBirth || undefined,
@@ -137,7 +157,13 @@ export default function CustomersPage() {
   };
 
   const handleDelete = async (customer: Customer) => {
-    if (!window.confirm(`Delete ${customer.fullName}? This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete ${getFullName(customer)}?`,
+      description: "This removes their customer record permanently and can't be undone.",
+      confirmLabel: "Delete Customer",
+      destructive: true,
+    });
+    if (!ok) return;
     setDeletingId(customer.id);
     try {
       await deleteCustomer(customer.id);
@@ -148,6 +174,19 @@ export default function CustomersPage() {
       toast.error(err instanceof Error ? err.message : "Could not delete customer.");
     } finally {
       setDeletingId(null);
+    }
+  };
+
+  const handleStageChange = async (customer: Customer, stage: CustomerStage) => {
+    setStageBusyId(customer.id);
+    try {
+      await updateCustomerStage(customer.id, stage);
+      toast.success(`Stage set to ${stage}.`);
+      await load();
+    } catch (err) {
+      toast.error(err instanceof Error ? err.message : "Could not update stage.");
+    } finally {
+      setStageBusyId(null);
     }
   };
 
@@ -190,13 +229,14 @@ export default function CustomersPage() {
         <DataTableHead>
           <DataTableHeadCell>Customer</DataTableHeadCell>
           <DataTableHeadCell>Contact</DataTableHeadCell>
+          <DataTableHeadCell>Stage</DataTableHeadCell>
           <DataTableHeadCell align="center">Purchases</DataTableHeadCell>
           <DataTableHeadCell align="right">Total Spent</DataTableHeadCell>
           <DataTableHeadCell align="right">Customer Since</DataTableHeadCell>
           <DataTableHeadCell align="right">Actions</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && customers.length === 0 && <DataTableEmpty colSpan={6} />}
+          {!loading && customers.length === 0 && <DataTableEmpty colSpan={7} />}
           {customers.map((customer, idx) => {
             const customerSales = salesByCustomer.get(customer.id) ?? [];
             const spent = customerSales.reduce((s, sale) => s + Number(sale.totalAmount), 0);
@@ -207,12 +247,29 @@ export default function CustomersPage() {
                     onClick={() => setActive(customer)}
                     className="font-medium text-foreground hover:text-primary text-left"
                   >
-                    {customer.fullName}
+                    {getFullName(customer)}
                   </button>
                 </DataTableCell>
                 <DataTableCell>
                   <p>{customer.email ?? "—"}</p>
                   <p className="text-xs text-muted-foreground">{customer.phone}</p>
+                </DataTableCell>
+                <DataTableCell>
+                  <Select
+                    value={customer.stage ?? "PROSPECT"}
+                    onValueChange={(v) => handleStageChange(customer, v as CustomerStage)}
+                  >
+                    <SelectTrigger className="w-32" disabled={stageBusyId === customer.id}>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STAGES.map((s) => (
+                        <SelectItem key={s} value={s}>
+                          <StatusBadge status={s} />
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
                 </DataTableCell>
                 <DataTableCell align="center">{customerSales.length}</DataTableCell>
                 <DataTableCell align="right">{formatCurrency(spent)}</DataTableCell>
@@ -248,7 +305,7 @@ export default function CustomersPage() {
           <div className="w-full max-w-md rounded-md bg-card p-6 shadow-xl" onClick={(e) => e.stopPropagation()}>
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-lg font-semibold text-foreground">{active.fullName}</h3>
+                <h3 className="text-lg font-semibold text-foreground">{getFullName(active)}</h3>
                 <p className="text-sm text-muted-foreground">{active.email ?? "No email on file"}</p>
                 <p className="text-sm text-muted-foreground">{active.phone}</p>
                 {active.dateOfBirth && (
@@ -285,16 +342,35 @@ export default function CustomersPage() {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogDescription className="invisible">Customers</DialogDescription>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Customer" : "Add Customer"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
+      <Drawer open={dialogOpen} onOpenChange={setDialogOpen} direction="right">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{editingId ? "Edit Customer" : "Add Customer"}</DrawerTitle>
+            <DrawerDescription>Buyer contact details on record.</DrawerDescription>
+          </DrawerHeader>
+          <DrawerBody className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>First Name</Label>
+                <Input
+                  value={form.firstName}
+                  onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Last Name (optional for companies)</Label>
+                <Input
+                  value={form.lastName}
+                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                />
+              </div>
+            </div>
             <div className="grid gap-2">
-              <Label>Full Name</Label>
-              <Input value={form.fullName} onChange={(e) => setForm((f) => ({ ...f, fullName: e.target.value }))} />
+              <Label>Middle Name (optional)</Label>
+              <Input
+                value={form.middleName}
+                onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+              />
             </div>
             <div className="grid gap-2">
               <Label>Phone</Label>
@@ -320,17 +396,17 @@ export default function CustomersPage() {
                 onChange={(e) => setForm((f) => ({ ...f, dateOfBirth: e.target.value }))}
               />
             </div>
-          </div>
-          <DialogFooter>
+          </DrawerBody>
+          <DrawerFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving…" : editingId ? "Save Changes" : "Add Customer"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

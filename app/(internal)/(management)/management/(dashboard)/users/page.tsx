@@ -27,20 +27,29 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerBody,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { listUsers, assignUserRole, createUser, deactivateUser } from "@/lib/api/users";
 import { sendInvite, listMyInvites, resendInvite, revokeInvite } from "@/lib/api/invites";
 import type { Invite, ManagementUser } from "@/lib/api/types";
 import { MANAGEMENT_ROLES, ROLE_LABELS, type Role } from "@/lib/rbac";
-import { formatDate } from "@/lib/utils";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
+import { blurActiveElement, formatDate, getFullName } from "@/lib/utils";
 
-const EMPTY_FORM = { name: "", email: "", password: "", role: "SITE_COORDINATOR" as Role };
+const EMPTY_FORM = {
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  email: "",
+  password: "",
+  role: "SITE_COORDINATOR" as Role,
+};
 const EMPTY_INVITE_FORM = { name: "", email: "", role: "SITE_COORDINATOR" as Role };
 
 export default function UsersPage() {
@@ -59,6 +68,7 @@ export default function UsersPage() {
   const [sendingInvite, setSendingInvite] = useState(false);
   const [inviteForm, setInviteForm] = useState(EMPTY_INVITE_FORM);
   const [inviteBusyId, setInviteBusyId] = useState<string | null>(null);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -84,7 +94,7 @@ export default function UsersPage() {
     const q = search.trim().toLowerCase();
     return users.filter((u) => {
       if (roleFilter !== "all" && u.role !== roleFilter) return false;
-      if (q && !u.name.toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
+      if (q && !getFullName(u).toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
       return true;
     });
   }, [users, search, roleFilter]);
@@ -100,7 +110,13 @@ export default function UsersPage() {
   };
 
   const handleDeactivate = async (user: ManagementUser) => {
-    if (!window.confirm(`Deactivate ${user.name}? They won't be able to log in.`)) return;
+    const ok = await confirm({
+      title: `Deactivate ${getFullName(user)}?`,
+      description: "They won't be able to log in until reactivated.",
+      confirmLabel: "Deactivate User",
+      destructive: true,
+    });
+    if (!ok) return;
     setDeactivatingId(user.id);
     try {
       await deactivateUser(user.id);
@@ -114,13 +130,20 @@ export default function UsersPage() {
   };
 
   const handleCreate = async () => {
-    if (!form.name || !form.email || !form.password) {
-      toast.error("Name, email and a starting password are required.");
+    if (!form.firstName || !form.lastName || !form.email || !form.password) {
+      toast.error("First name, last name, email and a starting password are required.");
       return;
     }
     setSaving(true);
     try {
-      await createUser(form);
+      await createUser({
+        firstName: form.firstName,
+        middleName: form.middleName || undefined,
+        lastName: form.lastName,
+        email: form.email,
+        password: form.password,
+        role: form.role,
+      });
       toast.success("User created.");
       setDialogOpen(false);
       setForm(EMPTY_FORM);
@@ -165,7 +188,13 @@ export default function UsersPage() {
   };
 
   const handleRevokeInvite = async (invite: Invite) => {
-    if (!window.confirm(`Revoke the invite to ${invite.email}?`)) return;
+    const ok = await confirm({
+      title: `Revoke the invite to ${invite.email}?`,
+      description: "The invite link will stop working immediately.",
+      confirmLabel: "Revoke Invite",
+      destructive: true,
+    });
+    if (!ok) return;
     setInviteBusyId(invite.id);
     try {
       await revokeInvite(invite.id);
@@ -185,10 +214,21 @@ export default function UsersPage() {
         subtitle="Everyone with access to the management side of El-Moore, and what they can see."
         action={
           <div className="flex gap-2">
-            <Button variant="outline" onClick={() => setInviteDialogOpen(true)}>
+            <Button
+              variant="outline"
+              onClick={() => {
+                blurActiveElement();
+                setInviteDialogOpen(true);
+              }}
+            >
               <Send className="h-4 w-4" /> Send Invite
             </Button>
-            <Button onClick={() => setDialogOpen(true)}>
+            <Button
+              onClick={() => {
+                blurActiveElement();
+                setDialogOpen(true);
+              }}
+            >
               <Plus className="h-4 w-4" /> Add User
             </Button>
           </div>
@@ -234,7 +274,7 @@ export default function UsersPage() {
           {!loading && filtered.length === 0 && <DataTableEmpty colSpan={6} />}
           {filtered.map((u, idx) => (
             <DataTableRow key={u.id} index={idx}>
-              <DataTableCell className="font-medium">{u.name}</DataTableCell>
+              <DataTableCell className="font-medium">{getFullName(u)}</DataTableCell>
               <DataTableCell>{u.email}</DataTableCell>
               <DataTableCell>
                 <Select value={u.role} onValueChange={(v) => handleRoleChange(u.id, v as Role)}>
@@ -323,16 +363,35 @@ export default function UsersPage() {
         </div>
       )}
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogDescription className="invisible">Users</DialogDescription>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Add User</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
+      <Drawer open={dialogOpen} onOpenChange={setDialogOpen} direction="right">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Add User</DrawerTitle>
+            <DrawerDescription>Create an internal account with an immediate password.</DrawerDescription>
+          </DrawerHeader>
+          <DrawerBody className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>First Name</Label>
+                <Input
+                  value={form.firstName}
+                  onChange={(e) => setForm((f) => ({ ...f, firstName: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={form.lastName}
+                  onChange={(e) => setForm((f) => ({ ...f, lastName: e.target.value }))}
+                />
+              </div>
+            </div>
             <div className="grid gap-2">
-              <Label>Name</Label>
-              <Input value={form.name} onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))} />
+              <Label>Middle Name (optional)</Label>
+              <Input
+                value={form.middleName}
+                onChange={(e) => setForm((f) => ({ ...f, middleName: e.target.value }))}
+              />
             </div>
             <div className="grid gap-2">
               <Label>Email</Label>
@@ -366,29 +425,28 @@ export default function UsersPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <DialogFooter>
+          </DrawerBody>
+          <DrawerFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleCreate} disabled={saving}>
               {saving ? "Creating…" : "Create User"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
 
-      <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-        <DialogDescription className="invisible">Send Invite</DialogDescription>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send Invite</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
-            <p className="text-sm text-muted-foreground">
+      <Drawer open={inviteDialogOpen} onOpenChange={setInviteDialogOpen} direction="right">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>Send Invite</DrawerTitle>
+            <DrawerDescription>
               Sends an email invite the person uses to set their own password — no starting
               password needed. MD can invite any role; GM can invite any role below MD.
-            </p>
+            </DrawerDescription>
+          </DrawerHeader>
+          <DrawerBody className="space-y-4">
             <div className="grid gap-2">
               <Label>Name</Label>
               <Input
@@ -422,17 +480,17 @@ export default function UsersPage() {
                 </SelectContent>
               </Select>
             </div>
-          </div>
-          <DialogFooter>
+          </DrawerBody>
+          <DrawerFooter>
             <Button variant="outline" onClick={() => setInviteDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSendInvite} disabled={sendingInvite}>
               {sendingInvite ? "Sending…" : "Send Invite"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

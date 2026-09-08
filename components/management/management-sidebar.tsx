@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Menu, X, LogOut } from "lucide-react";
 import { useAuth } from "@/contexts/auth-context";
 import { ROLE_LABELS } from "@/lib/rbac";
+import { getFullName } from "@/lib/utils";
 
 export default function ManagementSidebar() {
   const pathname = usePathname();
@@ -88,7 +89,7 @@ export default function ManagementSidebar() {
             <div className="flex items-center justify-between px-4 py-4">
               <div>
                 <p className="text-base font-semibold text-foreground">
-                  {user ? user.name : "Management"}
+                  {user ? getFullName(user) : "Management"}
                 </p>
                 <p className="text-sm text-muted-foreground">
                   {user ? ROLE_LABELS[user.role] : "Navigate the dashboard"}

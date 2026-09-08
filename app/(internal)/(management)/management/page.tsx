@@ -58,8 +58,8 @@ export default function ManagementLandingPage() {
       <div className="absolute inset-0 opacity-[0.06] bg-[radial-gradient(circle_at_20%_20%,white,transparent_45%)]" />
 
       <div className="container relative z-10 grid min-h-screen items-center gap-12 py-16 lg:grid-cols-[1.15fr_0.85fr] lg:gap-8">
-        {/* Editorial write-up */}
-        <ScrollReveal direction="left" className="text-white">
+        {/* Editorial write-up — only shown where it can sit beside the form, not stacked above it */}
+        <ScrollReveal direction="left" className="hidden text-white lg:block">
           <p className="text-[10px] font-semibold uppercase tracking-widest text-gold mb-4">
             El-Moore Management
           </p>

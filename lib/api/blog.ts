@@ -1,4 +1,4 @@
-import { apiFetch, uploadToPresignedUrl } from "./client";
+import { apiFetch, uploadToPresignedUrl, toPublicR2Url, R2_PUBLIC_BASE_URL } from "./client";
 import type { BlogPost } from "./types";
 
 function slugify(title: string) {
@@ -65,7 +65,7 @@ export async function uploadPostCoverImage(id: string, file: File): Promise<stri
     body: JSON.stringify({ filename: file.name }),
   });
   await uploadToPresignedUrl(uploadUrl, file);
-  const coverImageUrl = uploadUrl.split("?")[0];
+  const coverImageUrl = toPublicR2Url(uploadUrl, R2_PUBLIC_BASE_URL);
   await apiFetch<void>(`/blog/posts/${id}/cover-image/confirm`, {
     method: "POST",
     body: JSON.stringify({ coverImageUrl }),

@@ -37,20 +37,22 @@ export async function fetchProfile(): Promise<ManagementUser> {
   return apiFetch<ManagementUser>("/auth/me");
 }
 
-export async function registerUser(input: {
-  name: string;
+interface RegisterInput {
+  firstName: string;
+  middleName?: string;
+  lastName: string;
   email: string;
   password: string;
-}): Promise<void> {
+}
+
+export async function registerUser(input: RegisterInput): Promise<void> {
   await apiFetch<void>("/auth/register", { method: "POST", body: JSON.stringify(input) });
 }
 
-export async function registerExternalMarketer(input: {
-  name: string;
-  email: string;
-  password: string;
-}): Promise<void> {
-  await apiFetch<void>("/auth/register/external-marketer", {
+/** Affiliate marketer (renamed from "external marketer" — same behavior, requires
+ *  MD/GM approval after email verification, see approveAffiliateMarketer). */
+export async function registerAffiliateMarketer(input: RegisterInput): Promise<void> {
+  await apiFetch<void>("/auth/register/affiliate-marketer", {
     method: "POST",
     body: JSON.stringify(input),
   });
@@ -64,6 +66,17 @@ export async function resendVerification(email: string): Promise<void> {
   await apiFetch<void>("/auth/resend-verification", {
     method: "POST",
     body: JSON.stringify({ email }),
+  });
+}
+
+/** MD or GM only. The marketer must have verified their email before approval. */
+export async function approveAffiliateMarketer(
+  id: string,
+  status: "APPROVED" | "REJECTED",
+): Promise<void> {
+  await apiFetch<void>(`/auth/affiliate-marketer/${id}/approve`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
   });
 }
 

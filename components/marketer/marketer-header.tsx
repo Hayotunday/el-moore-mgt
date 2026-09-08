@@ -5,18 +5,14 @@ import { usePathname } from "next/navigation";
 import { useAuth } from "@/contexts/auth-context";
 import { ROLE_LABELS } from "@/lib/rbac";
 import { findMarketerNavForPath } from "./marketer-nav";
+import { getFullName, getInitials } from "@/lib/utils";
 
 export default function MarketerHeader() {
   const pathname = usePathname();
   const { user } = useAuth();
   const currentPage = pathname ? findMarketerNavForPath(pathname) : undefined;
 
-  const initials = user?.name
-    ?.split(" ")
-    .map((part) => part[0])
-    .slice(0, 2)
-    .join("")
-    .toUpperCase();
+  const initials = user ? getInitials(user) : "";
 
   return (
     <header className="sticky top-0 z-50 flex w-full items-center justify-center bg-background/95 shadow-ambient backdrop-blur supports-backdrop-filter:bg-background/80">
@@ -33,7 +29,7 @@ export default function MarketerHeader() {
           <div className="flex items-center gap-3">
             <div className="hidden text-right sm:block">
               <p className="text-sm font-semibold text-foreground leading-tight">
-                {user.name}
+                {getFullName(user)}
               </p>
               <p className="text-[11px] text-muted-foreground leading-tight">
                 {ROLE_LABELS[user.role]}
@@ -41,7 +37,7 @@ export default function MarketerHeader() {
             </div>
             <div className="flex h-9 w-9 items-center justify-center rounded-full bg-gold text-secondary-foreground text-xs font-bold overflow-hidden">
               {user.avatarUrl ? (
-                <img src={user.avatarUrl} alt={user.name} className="h-full w-full object-cover" />
+                <img src={user.avatarUrl} alt={getFullName(user)} className="h-full w-full object-cover" />
               ) : (
                 initials
               )}

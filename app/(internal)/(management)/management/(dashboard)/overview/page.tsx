@@ -13,7 +13,7 @@ import { listProperties } from "@/lib/api/properties";
 import { listReferrals, type ReferralWithSale } from "@/lib/api/referrals";
 import { listUsers } from "@/lib/api/users";
 import type { AttendanceRecord, DailyTaskReport, Property } from "@/lib/api/types";
-import { formatCurrency } from "@/lib/utils";
+import { formatCurrency, getShortName } from "@/lib/utils";
 
 async function settle<T>(promise: Promise<T>, fallback: T): Promise<T> {
   try {
@@ -64,7 +64,7 @@ export default function OverviewPage() {
   return (
     <div className="space-y-8">
       <PageHeader
-        title={`Welcome back, ${user.name.split(" ")[0]}`}
+        title={`Welcome back, ${getShortName(user) || "there"}`}
         subtitle="Here's what's moving across El-Moore today."
       />
 

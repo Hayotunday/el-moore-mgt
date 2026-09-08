@@ -27,16 +27,18 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-  DialogDescription,
-} from "@/components/ui/dialog";
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+  DrawerDescription,
+  DrawerBody,
+  DrawerFooter,
+} from "@/components/ui/drawer";
 import { listTransactions, createTransaction, updateTransaction, deleteTransaction } from "@/lib/api/finance";
 import type { FinancialTransaction, TransactionType } from "@/lib/api/types";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
+import { blurActiveElement, formatCurrency, formatDate } from "@/lib/utils";
 
 const EMPTY_FORM = { type: "EXPENSE" as TransactionType, category: "", amount: "", note: "" };
 
@@ -50,6 +52,7 @@ export default function FinancePage() {
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [form, setForm] = useState(EMPTY_FORM);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -75,12 +78,14 @@ export default function FinancePage() {
   const totalExpense = transactions.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + Number(t.amount), 0);
 
   const openNew = () => {
+    blurActiveElement();
     setEditingId(null);
     setForm(EMPTY_FORM);
     setDialogOpen(true);
   };
 
   const openEdit = (t: FinancialTransaction) => {
+    blurActiveElement();
     setEditingId(t.id);
     setForm({ type: t.type, category: t.category, amount: t.amount, note: t.note ?? "" });
     setDialogOpen(true);
@@ -122,7 +127,13 @@ export default function FinancePage() {
   };
 
   const handleDelete = async (t: FinancialTransaction) => {
-    if (!window.confirm(`Delete this ${t.category} transaction? This can't be undone.`)) return;
+    const ok = await confirm({
+      title: `Delete this ${t.category} transaction?`,
+      description: "This removes the entry from the ledger permanently and can't be undone.",
+      confirmLabel: "Delete Transaction",
+      destructive: true,
+    });
+    if (!ok) return;
     setDeletingId(t.id);
     try {
       await deleteTransaction(t.id);
@@ -217,13 +228,13 @@ export default function FinancePage() {
         </DataTableBody>
       </DataTable>
 
-      <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
-        <DialogDescription className="invisible">Finance</DialogDescription>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>{editingId ? "Edit Transaction" : "Add Transaction"}</DialogTitle>
-          </DialogHeader>
-          <div className="grid gap-4 py-2">
+      <Drawer open={dialogOpen} onOpenChange={setDialogOpen} direction="right">
+        <DrawerContent>
+          <DrawerHeader>
+            <DrawerTitle>{editingId ? "Edit Transaction" : "Add Transaction"}</DrawerTitle>
+            <DrawerDescription>Record an office income or expense entry.</DrawerDescription>
+          </DrawerHeader>
+          <DrawerBody className="space-y-4">
             <div className="grid gap-2">
               <Label>Type</Label>
               <Select value={form.type} onValueChange={(v) => setForm((f) => ({ ...f, type: v as TransactionType }))}>
@@ -257,17 +268,17 @@ export default function FinancePage() {
               <Label>Note (optional)</Label>
               <Input value={form.note} onChange={(e) => setForm((f) => ({ ...f, note: e.target.value }))} />
             </div>
-          </div>
-          <DialogFooter>
+          </DrawerBody>
+          <DrawerFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>
               Cancel
             </Button>
             <Button onClick={handleSave} disabled={saving}>
               {saving ? "Saving…" : editingId ? "Save Changes" : "Add Transaction"}
             </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+          </DrawerFooter>
+        </DrawerContent>
+      </Drawer>
     </div>
   );
 }

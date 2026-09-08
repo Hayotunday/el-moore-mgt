@@ -6,6 +6,7 @@ import { Wallet, Plus } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
+import StatusBadge from "@/components/management/status-badge";
 import {
   DataTable,
   DataTableHead,
@@ -35,6 +36,7 @@ import {
   DialogDescription,
 } from "@/components/ui/dialog";
 import { useAuth } from "@/contexts/auth-context";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
 import {
   listSales,
   listOverdueSales,
@@ -46,17 +48,28 @@ import {
 import { listProperties } from "@/lib/api/properties";
 import { listUsers } from "@/lib/api/users";
 import type { ManagementUser, Property, SaleType } from "@/lib/api/types";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, getFullName } from "@/lib/utils";
 
 const EMPTY_SALE_FORM = {
   propertyId: "",
-  buyerName: "",
+  buyerFirstName: "",
+  buyerMiddleName: "",
+  buyerLastName: "",
   buyerPhone: "",
   buyerEmail: "",
   saleType: "OUTRIGHT" as SaleType,
   totalAmount: "",
   marketerId: "",
 };
+
+function buyerDisplayName(sale: SaleWithDetails): string {
+  const split = getFullName({
+    firstName: sale.buyerFirstName,
+    middleName: sale.buyerMiddleName,
+    lastName: sale.buyerLastName,
+  });
+  return split || sale.buyerName || "—";
+}
 
 export default function SalesPage() {
   return (
@@ -94,6 +107,7 @@ function SalesPageContent() {
   const [saleDialogOpen, setSaleDialogOpen] = useState(false);
   const [saleForm, setSaleForm] = useState(EMPTY_SALE_FORM);
   const [creatingSale, setCreatingSale] = useState(false);
+  const confirm = useConfirm();
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -126,7 +140,7 @@ function SalesPageContent() {
 
   const staffNameById = useMemo(() => {
     const map = new Map<string, string>();
-    for (const s of staff) map.set(s.id, s.name);
+    for (const s of staff) map.set(s.id, getFullName(s));
     return map;
   }, [staff]);
 
@@ -160,7 +174,8 @@ function SalesPageContent() {
   const handleRecordSale = async () => {
     if (
       !saleForm.propertyId ||
-      !saleForm.buyerName ||
+      !saleForm.buyerFirstName ||
+      !saleForm.buyerLastName ||
       !saleForm.buyerPhone ||
       !saleForm.totalAmount
     ) {
@@ -171,7 +186,9 @@ function SalesPageContent() {
     try {
       await createSale({
         propertyId: saleForm.propertyId,
-        buyerName: saleForm.buyerName,
+        buyerFirstName: saleForm.buyerFirstName,
+        buyerMiddleName: saleForm.buyerMiddleName || undefined,
+        buyerLastName: saleForm.buyerLastName,
         buyerPhone: saleForm.buyerPhone,
         buyerEmail: saleForm.buyerEmail || undefined,
         saleType: saleForm.saleType,
@@ -197,7 +214,13 @@ function SalesPageContent() {
   };
 
   const handleVoid = async (saleId: string) => {
-    if (!window.confirm("Void this sale? The property returns to Available.")) return;
+    const ok = await confirm({
+      title: "Void this sale?",
+      description: "The property returns to Available and this can't be undone.",
+      confirmLabel: "Void Sale",
+      destructive: true,
+    });
+    if (!ok) return;
     setVoidingId(saleId);
     try {
       await voidSale(saleId);
@@ -210,18 +233,15 @@ function SalesPageContent() {
     }
   };
 
-  const totalOutright = outrightSales.reduce(
-    (sum, s) => sum + Number(s.totalAmount),
-    0,
-  );
-  const totalInstallment = installmentSales.reduce(
-    (sum, s) => sum + Number(s.totalAmount),
-    0,
-  );
-  const totalOutstanding = installmentSales.reduce(
-    (sum, s) => sum + s.balance,
-    0,
-  );
+  const totalOutright = outrightSales
+    .filter((s) => s.status !== "VOIDED")
+    .reduce((sum, s) => sum + Number(s.totalAmount), 0);
+  const totalInstallment = installmentSales
+    .filter((s) => s.status !== "VOIDED")
+    .reduce((sum, s) => sum + Number(s.totalAmount), 0);
+  const totalOutstanding = installmentSales
+    .filter((s) => s.status !== "VOIDED")
+    .reduce((sum, s) => sum + s.balance, 0);
 
   return (
     <div className="space-y-8">
@@ -279,14 +299,17 @@ function SalesPageContent() {
               <DataTableHeadCell align="right">Total</DataTableHeadCell>
               <DataTableHeadCell align="right">Paid</DataTableHeadCell>
               <DataTableHeadCell align="right">Balance</DataTableHeadCell>
+              <DataTableHeadCell align="center">Status</DataTableHeadCell>
               <DataTableHeadCell align="center">Action</DataTableHeadCell>
             </DataTableHead>
             <DataTableBody>
               {!loading && installmentSales.length === 0 && (
-                <DataTableEmpty colSpan={6} />
+                <DataTableEmpty colSpan={7} />
               )}
-              {installmentSales.map((sale, idx) => (
-                <DataTableRow key={sale.id} index={idx}>
+              {installmentSales.map((sale, idx) => {
+                const voided = sale.status === "VOIDED";
+                return (
+                <DataTableRow key={sale.id} index={idx} className={voided ? "opacity-50" : undefined}>
                   <DataTableCell>
                     <p className="font-medium">{sale.propertyTitle}</p>
                     <p className="text-xs text-muted-foreground">
@@ -294,7 +317,7 @@ function SalesPageContent() {
                     </p>
                   </DataTableCell>
                   <DataTableCell>
-                    <p>{sale.buyerName}</p>
+                    <p>{buyerDisplayName(sale)}</p>
                     <p className="text-xs text-muted-foreground">
                       {sale.buyerPhone}
                     </p>
@@ -317,10 +340,14 @@ function SalesPageContent() {
                     </span>
                   </DataTableCell>
                   <DataTableCell align="center">
+                    <StatusBadge status={sale.status ?? "ACTIVE"} />
+                  </DataTableCell>
+                  <DataTableCell align="center">
                     <div className="flex justify-center gap-1">
                       <Button
                         size="sm"
                         variant="outline"
+                        disabled={voided}
                         onClick={() => setPaymentSale(sale)}
                       >
                         Log Payment
@@ -329,7 +356,7 @@ function SalesPageContent() {
                         size="sm"
                         variant="ghost"
                         className="text-destructive hover:text-destructive"
-                        disabled={voidingId === sale.id}
+                        disabled={voided || voidingId === sale.id}
                         onClick={() => handleVoid(sale.id)}
                       >
                         Void
@@ -337,7 +364,8 @@ function SalesPageContent() {
                     </div>
                   </DataTableCell>
                 </DataTableRow>
-              ))}
+                );
+              })}
             </DataTableBody>
           </DataTable>
         </TabsContent>
@@ -350,14 +378,17 @@ function SalesPageContent() {
               <DataTableHeadCell align="right">Amount</DataTableHeadCell>
               <DataTableHeadCell>Sold By</DataTableHeadCell>
               <DataTableHeadCell>Marketer</DataTableHeadCell>
+              <DataTableHeadCell align="center">Status</DataTableHeadCell>
               <DataTableHeadCell align="center">Action</DataTableHeadCell>
             </DataTableHead>
             <DataTableBody>
               {!loading && outrightSales.length === 0 && (
-                <DataTableEmpty colSpan={6} />
+                <DataTableEmpty colSpan={7} />
               )}
-              {outrightSales.map((sale, idx) => (
-                <DataTableRow key={sale.id} index={idx}>
+              {outrightSales.map((sale, idx) => {
+                const voided = sale.status === "VOIDED";
+                return (
+                <DataTableRow key={sale.id} index={idx} className={voided ? "opacity-50" : undefined}>
                   <DataTableCell>
                     <p className="font-medium">{sale.propertyTitle}</p>
                     <p className="text-xs text-muted-foreground">
@@ -365,7 +396,7 @@ function SalesPageContent() {
                     </p>
                   </DataTableCell>
                   <DataTableCell>
-                    <p>{sale.buyerName}</p>
+                    <p>{buyerDisplayName(sale)}</p>
                     <p className="text-xs text-muted-foreground">
                       {sale.buyerPhone}
                     </p>
@@ -380,18 +411,22 @@ function SalesPageContent() {
                   </DataTableCell>
                   <DataTableCell>{sale.marketerId ?? "—"}</DataTableCell>
                   <DataTableCell align="center">
+                    <StatusBadge status={sale.status ?? "ACTIVE"} />
+                  </DataTableCell>
+                  <DataTableCell align="center">
                     <Button
                       size="sm"
                       variant="ghost"
                       className="text-destructive hover:text-destructive"
-                      disabled={voidingId === sale.id}
+                      disabled={voided || voidingId === sale.id}
                       onClick={() => handleVoid(sale.id)}
                     >
                       Void
                     </Button>
                   </DataTableCell>
                 </DataTableRow>
-              ))}
+                );
+              })}
             </DataTableBody>
           </DataTable>
         </TabsContent>
@@ -475,11 +510,31 @@ function SalesPageContent() {
             </div>
             <div className="grid grid-cols-2 gap-4">
               <div className="grid gap-2">
-                <Label>Buyer Name</Label>
+                <Label>Buyer First Name</Label>
                 <Input
-                  value={saleForm.buyerName}
+                  value={saleForm.buyerFirstName}
                   onChange={(e) =>
-                    setSaleForm((f) => ({ ...f, buyerName: e.target.value }))
+                    setSaleForm((f) => ({ ...f, buyerFirstName: e.target.value }))
+                  }
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Buyer Last Name</Label>
+                <Input
+                  value={saleForm.buyerLastName}
+                  onChange={(e) =>
+                    setSaleForm((f) => ({ ...f, buyerLastName: e.target.value }))
+                  }
+                />
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>Buyer Middle Name (optional)</Label>
+                <Input
+                  value={saleForm.buyerMiddleName}
+                  onChange={(e) =>
+                    setSaleForm((f) => ({ ...f, buyerMiddleName: e.target.value }))
                   }
                 />
               </div>

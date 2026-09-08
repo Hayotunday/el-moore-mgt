@@ -1,4 +1,4 @@
-import { apiFetch, uploadToPresignedUrl } from "./client";
+import { apiFetch, uploadToPresignedUrl, toPublicR2Url, R2_PUBLIC_BASE_URL } from "./client";
 
 /**
  * OFFICE_ADMIN only. Requests a presigned URL for an image to embed inline in blog or
@@ -14,5 +14,5 @@ export async function uploadContentImage(
     body: JSON.stringify({ context, contextId, filename: file.name }),
   });
   await uploadToPresignedUrl(uploadUrl, file);
-  return uploadUrl.split("?")[0];
+  return toPublicR2Url(uploadUrl, R2_PUBLIC_BASE_URL);
 }
