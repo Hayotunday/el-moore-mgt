@@ -42,15 +42,18 @@ export function toPublicR2Url(
 }
 
 /**
- * The management dashboard and marketer portal share one "internal" session,
- * kept under its own localStorage key. This app is the internal side only —
- * the public storefront is a separate deployment (a separate repo entirely)
- * with its own "storefront" realm, so there's nothing to auto-detect here.
+ * The management dashboard and the marketer portal are separate sessions —
+ * a staff member logged into /management and a marketer logged into
+ * /marketer keep independent tokens, so signing into one never affects the
+ * other even in the same browser. `apiFetch` has no realm context of its
+ * own, so it auto-detects which one applies from the current path; callers
+ * that already know their realm (AuthProvider) pass it explicitly instead.
  */
-export type AuthRealm = "internal" | "storefront";
+export type AuthRealm = "management" | "marketer";
 
 function detectRealm(): AuthRealm {
-  return "internal";
+  if (typeof window === "undefined") return "management";
+  return window.location.pathname.startsWith("/marketer") ? "marketer" : "management";
 }
 
 function tokenKey(realm: AuthRealm): string {

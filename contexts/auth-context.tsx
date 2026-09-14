@@ -42,11 +42,13 @@ function isValidCachedUser(value: unknown): value is User {
 }
 
 /**
- * `realm` scopes this provider to its own token + cached user, independent of any
- * other AuthProvider elsewhere in the tree. The root layout mounts one for
- * `realm="storefront"`; `app/(internal)/layout.tsx` nests a second one for
- * `realm="internal"` around the management + marketer route groups, which shadows
- * the outer provider for everything under them.
+ * `realm` scopes this provider to its own token + cached user, independent of
+ * any other AuthProvider elsewhere in the tree. `app/(internal)/(management)/
+ * layout.tsx` mounts one for `realm="management"` around /management, and
+ * `app/(internal)/(marketer)/layout.tsx` mounts a separate one for
+ * `realm="marketer"` around /marketer, so a staff member and a marketer can
+ * be signed in at once in the same browser without either session clobbering
+ * the other.
  */
 export function AuthProvider({ realm, children }: { realm: AuthRealm; children: ReactNode }) {
   const userStorageKey = `el-moore-${realm}-user`;

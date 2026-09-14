@@ -3,7 +3,6 @@ import localFont from "next/font/local";
 import "./globals.css";
 import { cn } from "@/lib/utils";
 import { Toaster } from "@/components/ui/sonner";
-import { AuthProvider } from "@/contexts/auth-context";
 import { ConfirmDialogProvider } from "@/contexts/confirm-dialog-context";
 import ConfirmDialog from "@/components/confirm-dialog";
 
@@ -50,13 +49,11 @@ export default function RootLayout({
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
-        <AuthProvider realm="internal">
-          <ConfirmDialogProvider>
-            <main className="flex-1">{children}</main>
-            <ConfirmDialog />
-            <Toaster />
-          </ConfirmDialogProvider>
-        </AuthProvider>
+        <ConfirmDialogProvider>
+          <main className="flex-1">{children}</main>
+          <ConfirmDialog />
+          <Toaster />
+        </ConfirmDialogProvider>
       </body>
     </html>
   );
