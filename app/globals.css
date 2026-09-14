@@ -8,6 +8,7 @@
   --color-background: var(--background);
   --color-foreground: var(--foreground);
   --font-sans: var(--font-sans);
+  --font-serif: var(--font-serif);
   --font-mono: var(--font-geist-mono);
   --font-heading: var(--font-sans);
   --color-sidebar-ring: var(--sidebar-ring);
@@ -40,8 +41,11 @@
   --color-card-foreground: var(--card-foreground);
   --color-card: var(--card);
   --color-gold: var(--gold);
+  --color-gold-deep: var(--gold-deep);
   --color-cream: var(--cream);
   --color-dark-green: var(--dark-green);
+  --color-ink-soft: var(--ink-soft);
+  --color-line: var(--line);
   --radius-sm: calc(var(--radius) * 0.6);
   --radius-md: calc(var(--radius) * 0.8);
   --radius-lg: var(--radius);
@@ -94,8 +98,11 @@
 
   /* Custom tokens */
   --gold: #CDBF8A;
+  --gold-deep: #8A7C3F;    /* darker gold — for eyebrow text on light backgrounds */
   --cream: #FAF9F5;
   --dark-green: #142C26;
+  --ink-soft: rgba(20, 44, 38, 0.68);
+  --line: rgba(20, 44, 38, 0.14);
 
   /* Green gradient — used for bold CTA sections. 135deg, primary(#001712) -> primary_container(#142C26) per DESIGN_SYSTEM.md */
   --gradient-green: linear-gradient(135deg, #001712 0%, #142C26 55%, #1D3A32 100%);
@@ -154,6 +161,14 @@
     @apply border-border outline-ring/50;
   }
   body {
+    /* clip, not hidden: "hidden" forces the browser to compute the other
+       axis (overflow-y) as "auto" per the CSS overflow spec, which turns
+       body into its own scroll container and breaks position:sticky
+       descendants (the navbar) plus produces a second scrollbar. "clip"
+       is explicitly excluded from that coercion. */
+    overflow-x: clip;
+  }
+  body {
     @apply bg-background text-foreground;
   }
   html {
@@ -193,6 +208,53 @@
   .border-gold {
     border-color: var(--gold);
   }
+  /* ── Editorial eyebrow label — small caps kicker with a leading rule, used
+     above serif headings site-wide ── */
+  .eyebrow {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.6rem;
+    font-size: 0.72rem;
+    font-weight: 600;
+    letter-spacing: 0.22em;
+    text-transform: uppercase;
+    color: var(--gold-deep);
+  }
+  .eyebrow::before {
+    content: "";
+    width: 1.6rem;
+    height: 1px;
+    background: var(--gold-deep);
+  }
+  .eyebrow.on-dark {
+    color: var(--gold);
+  }
+  .eyebrow.on-dark::before {
+    background: var(--gold);
+  }
+}
+
+@keyframes ping-slow {
+  0% {
+    transform: scale(0.85);
+    opacity: 0.8;
+  }
+  100% {
+    transform: scale(1.25);
+    opacity: 0;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-ping-slow {
+    animation: none;
+  }
+}
+
+@layer utilities {
+  .animate-ping-slow {
+    animation: ping-slow 2.6s ease-out infinite;
+  }
   /* ── Green gradient CTA — used on bold landing sections ── */
   .bg-gradient-green {
     background: var(--gradient-green);
@@ -224,45 +286,3 @@
   }
 }
 
-#root {
-  max-width: 1280px;
-  margin: 0 auto;
-  padding: 2rem;
-  text-align: center;
-}
-
-.logo {
-  height: 6em;
-  padding: 1.5em;
-  will-change: filter;
-  transition: filter 300ms;
-}
-.logo:hover {
-  filter: drop-shadow(0 0 2em #646cffaa);
-}
-.logo.react:hover {
-  filter: drop-shadow(0 0 2em #61dafbaa);
-}
-
-@keyframes logo-spin {
-  from {
-    transform: rotate(0deg);
-  }
-  to {
-    transform: rotate(360deg);
-  }
-}
-
-@media (prefers-reduced-motion: no-preference) {
-  a:nth-of-type(2) .logo {
-    animation: logo-spin infinite 20s linear;
-  }
-}
-
-.card {
-  padding: 2em;
-}
-
-.read-the-docs {
-  color: #888;
-}
