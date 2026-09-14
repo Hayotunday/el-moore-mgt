@@ -42,20 +42,15 @@ export function toPublicR2Url(
 }
 
 /**
- * The management dashboard and marketer portal share one "internal" session; the
- * public storefront is a separate "storefront" session. Each keeps its own token
- * under its own localStorage key so signing into one never affects the other —
- * a staff member can browse the storefront as themselves, and a customer session
- * there can't leak into (or satisfy) the management login guard.
+ * The management dashboard and marketer portal share one "internal" session,
+ * kept under its own localStorage key. This app is the internal side only —
+ * the public storefront is a separate deployment (a separate repo entirely)
+ * with its own "storefront" realm, so there's nothing to auto-detect here.
  */
 export type AuthRealm = "internal" | "storefront";
 
 function detectRealm(): AuthRealm {
-  if (typeof window === "undefined") return "storefront";
-  const path = window.location.pathname;
-  return path.startsWith("/management") || path.startsWith("/marketer")
-    ? "internal"
-    : "storefront";
+  return "internal";
 }
 
 function tokenKey(realm: AuthRealm): string {

@@ -1,11 +1,11 @@
 import type { ReactNode } from "react";
-import { AuthProvider } from "@/contexts/auth-context";
 
 /**
- * Everything under /management and /marketer shares one "internal" auth session,
- * kept separate from the public storefront's session (see AuthProvider/AuthRealm).
- * This shadows the root layout's storefront-scoped AuthProvider for this subtree.
+ * The root layout already provides the "internal" realm AuthProvider for this
+ * whole app (there's no storefront sibling here anymore to shadow), so this
+ * layout is a pure passthrough — kept only because the (management)/(marketer)
+ * route groups nest under it.
  */
 export default function InternalLayout({ children }: { children: ReactNode }) {
-  return <AuthProvider realm="internal">{children}</AuthProvider>;
+  return <>{children}</>;
 }

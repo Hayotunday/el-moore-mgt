@@ -1,19 +1,11 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import { Fraunces } from "next/font/google";
 import "./globals.css";
 import { cn } from "@/lib/utils";
-import Navbar from "@/components/navbar";
-import Footer from "@/components/footer";
 import { Toaster } from "@/components/ui/sonner";
 import { AuthProvider } from "@/contexts/auth-context";
-import { AuthDrawerProvider } from "@/contexts/auth-drawer-context";
-import AuthDrawer from "@/components/auth-drawer";
 import { ConfirmDialogProvider } from "@/contexts/confirm-dialog-context";
 import ConfirmDialog from "@/components/confirm-dialog";
-import ReferralTracker from "@/components/referral-tracker";
-import SplashScreen from "@/components/splash-screen";
-import ChatbotFab from "@/components/chatbot-fab";
 
 const axiforma = localFont({
   src: [
@@ -41,16 +33,9 @@ const axiforma = localFont({
   variable: "--font-sans",
 });
 
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  weight: ["300", "500", "600"],
-  style: ["normal", "italic"],
-  variable: "--font-serif",
-});
-
 export const metadata: Metadata = {
-  title: "El-Moore",
-  description: "Trusted real estate partner",
+  title: "El-Moore Staff",
+  description: "El-Moore internal management and marketer portal",
 };
 
 export default function RootLayout({
@@ -61,26 +46,16 @@ export default function RootLayout({
   return (
     <html
       lang="en"
-      className={cn("h-full", "antialiased", axiforma.variable, fraunces.variable, "font-sans")}
+      className={cn("h-full", "antialiased", axiforma.variable, "font-sans")}
       suppressHydrationWarning
     >
       <body className="min-h-screen flex flex-col" suppressHydrationWarning>
-        <AuthProvider realm="storefront">
-          <AuthDrawerProvider>
-            <ConfirmDialogProvider>
-              <ReferralTracker />
-              <SplashScreen />
-              <Navbar />
-              <main className="flex-1">
-                {children}
-              </main>
-              <Footer />
-              <ChatbotFab />
-              <AuthDrawer />
-              <ConfirmDialog />
-              <Toaster />
-            </ConfirmDialogProvider>
-          </AuthDrawerProvider>
+        <AuthProvider realm="internal">
+          <ConfirmDialogProvider>
+            <main className="flex-1">{children}</main>
+            <ConfirmDialog />
+            <Toaster />
+          </ConfirmDialogProvider>
         </AuthProvider>
       </body>
     </html>
