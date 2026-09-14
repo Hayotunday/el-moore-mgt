@@ -1,9 +1,12 @@
 "use client";
 
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { motion } from "framer-motion";
 import { ArrowRight, Share2, ShieldCheck } from "lucide-react";
 import ScrollReveal from "@/components/scroll-reveal";
+import { getStoredToken } from "@/lib/api/client";
 
 const portals = [
   {
@@ -23,6 +26,35 @@ const portals = [
 ];
 
 export default function PortalChooserPage() {
+  const router = useRouter();
+  // Not rendered until we've confirmed there's no existing session to redirect
+  // into — otherwise a signed-in user would see the chooser flash before being
+  // bounced to their dashboard.
+  const [checkedSession, setCheckedSession] = useState(false);
+
+  useEffect(() => {
+    if (getStoredToken("management")) {
+      router.replace("/management/overview");
+      return;
+    }
+    if (getStoredToken("marketer")) {
+      router.replace("/marketer/overview");
+      return;
+    }
+    setCheckedSession(true);
+  }, [router]);
+
+  if (!checkedSession) {
+    return (
+      <div
+        className="flex min-h-screen w-full items-center justify-center"
+        style={{ background: "var(--gradient-green)" }}
+      >
+        <div className="h-8 w-8 animate-spin rounded-full border-2 border-white/30 border-t-white" />
+      </div>
+    );
+  }
+
   return (
     <div
       className="relative flex min-h-screen w-full flex-col items-center justify-center overflow-hidden px-4 py-16"
