@@ -260,10 +260,13 @@ export interface AutomatedGreetingSettings {
 
 export type InviteStatus = "PENDING" | "CLAIMED" | "EXPIRED" | "REVOKED";
 
-export interface Invite {
+// CreateInviteDto now takes firstName/middleName/lastName instead of a single
+// `name` (matching the PersonName split applied to Users/Customers/Sales) —
+// assuming the returned Invite follows the same shape, since the live docs
+// don't document response bodies to confirm it directly.
+export interface Invite extends PersonName {
   id: string;
   email: string;
-  name: string;
   role: Role;
   status?: InviteStatus;
   expiresAt?: string;

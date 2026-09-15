@@ -52,7 +52,7 @@ export async function registerUser(input: RegisterInput): Promise<void> {
 /** Affiliate marketer (renamed from "external marketer" — same behavior, requires
  *  MD/GM approval after email verification, see approveAffiliateMarketer). */
 export async function registerAffiliateMarketer(input: RegisterInput): Promise<void> {
-  await apiFetch<void>("/auth/register/affiliate-marketer", {
+  await apiFetch<void>("/auth/affiliate-marketer/register", {
     method: "POST",
     body: JSON.stringify(input),
   });

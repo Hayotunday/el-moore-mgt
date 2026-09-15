@@ -171,17 +171,18 @@ export async function listProjectPhotos(projectId: string): Promise<ProjectPhoto
 export async function uploadProjectPhoto(
   projectId: string,
   file: File,
-  visibleToCustomers = false,
+  options: { visibleToCustomers?: boolean; caption?: string; workItemId?: string } = {},
 ): Promise<ProjectPhoto> {
+  const { visibleToCustomers = false, caption, workItemId } = options;
   const { uploadUrl } = await apiFetch<{ uploadUrl: string }>(
     `/projects/${projectId}/photos/upload-url`,
-    { method: "POST", body: JSON.stringify({ filename: file.name }) },
+    { method: "POST", body: JSON.stringify({ filename: file.name, contentType: file.type }) },
   );
   await uploadToPresignedUrl(uploadUrl, file);
-  const photoUrl = toPublicR2Url(uploadUrl, R2_PUBLIC_BASE_URL);
+  const imageUrl = toPublicR2Url(uploadUrl, R2_PUBLIC_BASE_URL);
   return apiFetch<ProjectPhoto>(`/projects/${projectId}/photos`, {
     method: "POST",
-    body: JSON.stringify({ photoUrl, visibleToCustomers }),
+    body: JSON.stringify({ imageUrl, caption, workItemId, visibleToCustomers }),
   });
 }
 
@@ -202,15 +203,6 @@ export async function deleteProjectPhoto(projectId: string, photoId: string): Pr
   await apiFetch<void>(`/projects/${projectId}/photos/${photoId}`, { method: "DELETE" });
 }
 
-/* ---------- Customer-facing portal ---------- */
-
-/** Authenticated customer. Projects linked to properties they've purchased. */
-export async function listMyProjects(): Promise<Project[]> {
-  return apiFetch<Project[]>("/customer/projects");
-}
-
-/** Authenticated customer. Includes work items and only customer-visible updates/photos.
- *  Only accessible if the customer has a sale linked to a property in this project. */
-export async function getMyProject(id: string): Promise<ProjectDetail> {
-  return apiFetch<ProjectDetail>(`/customer/projects/${id}`);
-}
+// The customer-facing "my projects" portal (GET /customers/me/projects) is a
+// storefront concern — a staff or marketer session never calls it — so those
+// two functions live in the storefront repo's copy of this file, not here.

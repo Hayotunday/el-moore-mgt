@@ -11,6 +11,7 @@ import { Label } from "@/components/ui/label";
 import { verifyInviteToken, acceptInvite } from "@/lib/api/invites";
 import { ROLE_LABELS } from "@/lib/rbac";
 import type { Invite } from "@/lib/api/types";
+import { getFullName } from "@/lib/utils";
 
 export default function InviteClaimPage() {
   return (
@@ -106,7 +107,7 @@ function InviteClaimContent() {
                 </div>
                 <h1 className="text-2xl font-bold text-foreground">Set your password</h1>
                 <p className="text-sm text-muted-foreground mt-1">
-                  {invite.name} · {invite.email} · joining as{" "}
+                  {getFullName(invite)} · {invite.email} · joining as{" "}
                   <span className="font-medium text-foreground">{ROLE_LABELS[invite.role]}</span>
                 </p>
               </div>

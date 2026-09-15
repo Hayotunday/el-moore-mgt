@@ -2,7 +2,13 @@ import { apiFetch } from "./client";
 import type { Invite, ManagementUser, Role } from "./types";
 
 /** MD/GM only. MD can invite any role; GM can invite any role below MD. */
-export async function sendInvite(input: { email: string; name: string; role: Role }): Promise<Invite> {
+export async function sendInvite(input: {
+  email: string;
+  firstName: string;
+  middleName?: string;
+  lastName: string;
+  role: Role;
+}): Promise<Invite> {
   return apiFetch<Invite>("/invites", { method: "POST", body: JSON.stringify(input) });
 }
 

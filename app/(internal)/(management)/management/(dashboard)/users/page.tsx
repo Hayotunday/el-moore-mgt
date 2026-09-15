@@ -50,7 +50,13 @@ const EMPTY_FORM = {
   password: "",
   role: "SITE_COORDINATOR" as Role,
 };
-const EMPTY_INVITE_FORM = { name: "", email: "", role: "SITE_COORDINATOR" as Role };
+const EMPTY_INVITE_FORM = {
+  firstName: "",
+  middleName: "",
+  lastName: "",
+  email: "",
+  role: "SITE_COORDINATOR" as Role,
+};
 
 export default function UsersPage() {
   const [users, setUsers] = useState<ManagementUser[]>([]);
@@ -156,8 +162,8 @@ export default function UsersPage() {
   };
 
   const handleSendInvite = async () => {
-    if (!inviteForm.name || !inviteForm.email) {
-      toast.error("Name and email are required.");
+    if (!inviteForm.firstName || !inviteForm.lastName || !inviteForm.email) {
+      toast.error("First name, last name, and email are required.");
       return;
     }
     setSendingInvite(true);
@@ -325,7 +331,7 @@ export default function UsersPage() {
             <DataTableBody>
               {invites.map((invite, idx) => (
                 <DataTableRow key={invite.id} index={idx}>
-                  <DataTableCell className="font-medium">{invite.name}</DataTableCell>
+                  <DataTableCell className="font-medium">{getFullName(invite)}</DataTableCell>
                   <DataTableCell>{invite.email}</DataTableCell>
                   <DataTableCell>{ROLE_LABELS[invite.role]}</DataTableCell>
                   <DataTableCell align="center">
@@ -447,11 +453,27 @@ export default function UsersPage() {
             </DrawerDescription>
           </DrawerHeader>
           <DrawerBody className="space-y-4">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="grid gap-2">
+                <Label>First Name</Label>
+                <Input
+                  value={inviteForm.firstName}
+                  onChange={(e) => setInviteForm((f) => ({ ...f, firstName: e.target.value }))}
+                />
+              </div>
+              <div className="grid gap-2">
+                <Label>Last Name</Label>
+                <Input
+                  value={inviteForm.lastName}
+                  onChange={(e) => setInviteForm((f) => ({ ...f, lastName: e.target.value }))}
+                />
+              </div>
+            </div>
             <div className="grid gap-2">
-              <Label>Name</Label>
+              <Label>Middle Name (optional)</Label>
               <Input
-                value={inviteForm.name}
-                onChange={(e) => setInviteForm((f) => ({ ...f, name: e.target.value }))}
+                value={inviteForm.middleName}
+                onChange={(e) => setInviteForm((f) => ({ ...f, middleName: e.target.value }))}
               />
             </div>
             <div className="grid gap-2">
