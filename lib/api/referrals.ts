@@ -26,7 +26,7 @@ export async function listReferrals(): Promise<ReferralWithSale[]> {
     .sort((a, b) => (a.createdAt < b.createdAt ? 1 : -1));
 }
 
-/** EXTERNAL_MARKETER only — the referrals attributed to the authenticated marketer. */
+/** AFFILIATE_MARKETER only — the referrals attributed to the authenticated marketer. */
 export async function listMyReferrals(): Promise<Referral[]> {
   return apiFetch<Referral[]>("/referrals/mine");
 }

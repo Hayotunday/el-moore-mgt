@@ -170,3 +170,22 @@ export async function removePropertyImage(
     method: "DELETE",
   });
 }
+
+/** OFFICE_ADMIN only. Images uploaded (e.g. via a step-1 presigned-URL request)
+ *  but never attached to a property — propertyId is null by definition here,
+ *  unlike the normal PropertyImage shape. */
+export async function listOrphanedImages(): Promise<
+  (Omit<PropertyImage, "propertyId"> & { propertyId: null })[]
+> {
+  return apiFetch("/properties/images/orphaned");
+}
+
+/** OFFICE_ADMIN only. Attaches a previously-orphaned image to a property. */
+export async function attachOrphanedImage(
+  propertyId: string,
+  imageId: string,
+): Promise<PropertyImage> {
+  return apiFetch<PropertyImage>(`/properties/${propertyId}/images/${imageId}/attach`, {
+    method: "POST",
+  });
+}
