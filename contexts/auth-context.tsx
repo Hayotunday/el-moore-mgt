@@ -2,7 +2,7 @@
 
 import React, { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import * as authApi from "@/lib/api/auth";
-import { getStoredToken, setStoredToken, onAuthExpired, type AuthRealm } from "@/lib/api/client";
+import { getStoredToken, setStoredToken, onAuthExpired } from "@/lib/api/client";
 import type { ManagementUser } from "@/lib/api/types";
 import type { Role } from "@/lib/rbac";
 import { getPagesForRole, canAccessPath } from "@/lib/rbac";
@@ -41,23 +41,15 @@ function isValidCachedUser(value: unknown): value is User {
   );
 }
 
-/**
- * `realm` scopes this provider to its own token + cached user, independent of
- * any other AuthProvider elsewhere in the tree. `app/(internal)/(management)/
- * layout.tsx` mounts one for `realm="management"` around /management, and
- * `app/(internal)/(marketer)/layout.tsx` mounts a separate one for
- * `realm="marketer"` around /marketer, so a staff member and a marketer can
- * be signed in at once in the same browser without either session clobbering
- * the other.
- */
-export function AuthProvider({ realm, children }: { realm: AuthRealm; children: ReactNode }) {
-  const userStorageKey = `el-moore-${realm}-user`;
+const USER_STORAGE_KEY = "el-moore-management-user";
+
+export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
-    const token = getStoredToken(realm);
-    const cachedUser = window.localStorage.getItem(userStorageKey);
+    const token = getStoredToken();
+    const cachedUser = window.localStorage.getItem(USER_STORAGE_KEY);
     if (token && cachedUser) {
       try {
         const parsed = JSON.parse(cachedUser);
@@ -67,44 +59,41 @@ export function AuthProvider({ realm, children }: { realm: AuthRealm; children: 
           throw new Error("Cached user is missing required fields.");
         }
       } catch {
-        setStoredToken(null, realm);
-        window.localStorage.removeItem(userStorageKey);
+        setStoredToken(null);
+        window.localStorage.removeItem(USER_STORAGE_KEY);
       }
     }
     setIsLoading(false);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realm]);
+  }, []);
 
   // If a background request's silent token refresh fails (the refresh-token
   // cookie itself expired), drop the stale in-memory user right away instead of
   // leaving the UI looking signed in while every request keeps 401ing.
   useEffect(() => {
-    return onAuthExpired((expiredRealm) => {
-      if (expiredRealm !== realm) return;
-      window.localStorage.removeItem(userStorageKey);
+    return onAuthExpired(() => {
+      window.localStorage.removeItem(USER_STORAGE_KEY);
       setUser(null);
     });
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [realm]);
+  }, []);
 
   const login = async (email: string, password: string) => {
     const { user: loggedInUser, token } = await authApi.login(email, password);
-    setStoredToken(token, realm);
-    window.localStorage.setItem(userStorageKey, JSON.stringify(loggedInUser));
+    setStoredToken(token);
+    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(loggedInUser));
     setUser(loggedInUser);
     return loggedInUser;
   };
 
   const logout = async () => {
     await authApi.logout();
-    setStoredToken(null, realm);
-    window.localStorage.removeItem(userStorageKey);
+    setStoredToken(null);
+    window.localStorage.removeItem(USER_STORAGE_KEY);
     setUser(null);
   };
 
   const refreshProfile = async () => {
     const freshUser = await authApi.fetchProfile();
-    window.localStorage.setItem(userStorageKey, JSON.stringify(freshUser));
+    window.localStorage.setItem(USER_STORAGE_KEY, JSON.stringify(freshUser));
     setUser(freshUser);
     return freshUser;
   };

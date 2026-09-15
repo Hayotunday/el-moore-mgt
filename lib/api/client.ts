@@ -42,58 +42,37 @@ export function toPublicR2Url(
 }
 
 /**
- * The management dashboard and the marketer portal are separate sessions —
- * a staff member logged into /management and a marketer logged into
- * /marketer keep independent tokens, so signing into one never affects the
- * other even in the same browser. `apiFetch` has no realm context of its
- * own, so it auto-detects which one applies from the current path; callers
- * that already know their realm (AuthProvider) pass it explicitly instead.
+ * This app is the management side only — the marketer portal is a separate
+ * deployment (a separate repo entirely) with its own token under its own
+ * key, so there's no realm to detect or thread through here.
  */
-export type AuthRealm = "management" | "marketer";
+const TOKEN_KEY = "el-moore-management-token";
 
-function detectRealm(): AuthRealm {
-  if (typeof window === "undefined") return "management";
-  return window.location.pathname.startsWith("/marketer") ? "marketer" : "management";
-}
-
-function tokenKey(realm: AuthRealm): string {
-  return `el-moore-${realm}-token`;
-}
-
-/** Omit `realm` to auto-detect it from the current path — used by apiFetch, which
- *  has no realm context of its own. Callers that already know their realm (e.g.
- *  AuthProvider) should pass it explicitly. */
-export function getStoredToken(
-  realm: AuthRealm = detectRealm(),
-): string | null {
+export function getStoredToken(): string | null {
   if (typeof window === "undefined") return null;
-  return window.localStorage.getItem(tokenKey(realm));
+  return window.localStorage.getItem(TOKEN_KEY);
 }
 
-export function setStoredToken(
-  token: string | null,
-  realm: AuthRealm = detectRealm(),
-) {
+export function setStoredToken(token: string | null) {
   if (typeof window === "undefined") return;
-  if (token) window.localStorage.setItem(tokenKey(realm), token);
-  else window.localStorage.removeItem(tokenKey(realm));
+  if (token) window.localStorage.setItem(TOKEN_KEY, token);
+  else window.localStorage.removeItem(TOKEN_KEY);
 }
 
-/** Dispatched when a realm's refresh-token cookie itself is invalid/expired, so
+/** Dispatched when the refresh-token cookie itself is invalid/expired, so
  *  AuthProvider can clear its in-memory user immediately instead of leaving the UI
  *  looking "logged in" while every request 401s. */
 const AUTH_EXPIRED_EVENT = "el-moore-auth-expired";
 
-export function onAuthExpired(handler: (realm: AuthRealm) => void): () => void {
+export function onAuthExpired(handler: () => void): () => void {
   if (typeof window === "undefined") return () => {};
-  const listener = (e: Event) => handler((e as CustomEvent<AuthRealm>).detail);
-  window.addEventListener(AUTH_EXPIRED_EVENT, listener);
-  return () => window.removeEventListener(AUTH_EXPIRED_EVENT, listener);
+  window.addEventListener(AUTH_EXPIRED_EVENT, handler);
+  return () => window.removeEventListener(AUTH_EXPIRED_EVENT, handler);
 }
 
-function announceAuthExpired(realm: AuthRealm) {
+function announceAuthExpired() {
   if (typeof window === "undefined") return;
-  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT, { detail: realm }));
+  window.dispatchEvent(new CustomEvent(AUTH_EXPIRED_EVENT));
 }
 
 export class ApiError extends Error {
@@ -168,24 +147,24 @@ async function rawRefresh(): Promise<string | null> {
   }
 }
 
-// Access-token refreshes are deduped per realm so a burst of requests that all hit
-// a 401 at once (e.g. right after the token expires) triggers exactly one
+// Access-token refreshes are deduped so a burst of requests that all hit a 401
+// at once (e.g. right after the token expires) triggers exactly one
 // /auth/refresh call, not one per request.
-const refreshInFlight: Partial<Record<AuthRealm, Promise<string | null>>> = {};
+let refreshInFlight: Promise<string | null> | null = null;
 
-function refreshOnce(realm: AuthRealm): Promise<string | null> {
-  if (!refreshInFlight[realm]) {
-    refreshInFlight[realm] = rawRefresh()
+function refreshOnce(): Promise<string | null> {
+  if (!refreshInFlight) {
+    refreshInFlight = rawRefresh()
       .then((newToken) => {
-        setStoredToken(newToken, realm);
-        if (!newToken) announceAuthExpired(realm);
+        setStoredToken(newToken);
+        if (!newToken) announceAuthExpired();
         return newToken;
       })
       .finally(() => {
-        delete refreshInFlight[realm];
+        refreshInFlight = null;
       });
   }
-  return refreshInFlight[realm]!;
+  return refreshInFlight;
 }
 
 /**
@@ -203,8 +182,7 @@ export async function apiFetch<T>(
   path: string,
   options: RequestInit = {},
 ): Promise<T> {
-  const realm = detectRealm();
-  let token = getStoredToken(realm);
+  let token = getStoredToken();
 
   const send = (authToken: string | null) =>
     fetch(`${API_BASE_URL}/api${path}`, {
@@ -220,7 +198,7 @@ export async function apiFetch<T>(
   let res = await send(token);
 
   if (res.status === 401 && token && path !== "/auth/refresh") {
-    const refreshed = await refreshOnce(realm);
+    const refreshed = await refreshOnce();
     if (refreshed) {
       token = refreshed;
       res = await send(token);
