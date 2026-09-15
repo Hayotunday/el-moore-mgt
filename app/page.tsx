@@ -2,21 +2,27 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { getStoredToken } from "@/lib/api/client";
+import { useAuth } from "@/contexts/auth-context";
 
 /**
  * This repo is the management side only now (the marketer portal split off
  * into its own repo), so there's no longer a choice to make at "/" — just
  * forward to the dashboard if already signed in, or the sign-in page
- * otherwise, mirroring the redirect-if-signed-in behavior from before the
- * split rather than dropping it.
+ * otherwise. Goes through useAuth() (the same user/isLoading AuthProvider
+ * exposes to the dashboard layout's own guard) rather than checking the raw
+ * token directly, so this agrees with that guard on what "signed in" means —
+ * a token whose cached user fails validation is treated as signed out here
+ * too, instead of bouncing to /management/overview only to immediately
+ * bounce again to /management.
  */
 export default function RootRedirect() {
   const router = useRouter();
+  const { user, isLoading } = useAuth();
 
   useEffect(() => {
-    router.replace(getStoredToken() ? "/management/overview" : "/management");
-  }, [router]);
+    if (isLoading) return;
+    router.replace(user ? "/management/overview" : "/management");
+  }, [isLoading, user, router]);
 
   return (
     <div
