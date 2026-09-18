@@ -40,10 +40,12 @@ import {
 } from "@/lib/api/blog";
 import type { BlogPost } from "@/lib/api/types";
 import { blurActiveElement, formatDate } from "@/lib/utils";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
 
 const EMPTY_FORM = { title: "", slug: "", content: "", published: false };
 
 export default function BlogPage() {
+  const confirm = useConfirm();
   const [posts, setPosts] = useState<BlogPost[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
@@ -137,16 +139,32 @@ export default function BlogPage() {
   };
 
   const handleTogglePublish = async (post: BlogPost) => {
+    const action = post.published ? "unpublish" : "publish";
+    const ok = await confirm({
+      title: post.published ? "Unpublish Post?" : "Publish Post?",
+      description: post.published
+        ? `"${post.title}" will be hidden from the public blog immediately.`
+        : `"${post.title}" will go live on the public blog immediately.`,
+      confirmLabel: post.published ? "Unpublish" : "Publish",
+    });
+    if (!ok) return;
     try {
       await setPostPublished(post.id, !post.published);
       toast.success(post.published ? "Post unpublished." : "Post published.");
       await load();
     } catch {
-      toast.error("Could not update post.");
+      toast.error(`Could not ${action} post.`);
     }
   };
 
   const handleDelete = async (post: BlogPost) => {
+    const ok = await confirm({
+      title: "Delete Post?",
+      description: `"${post.title}" will be permanently deleted and removed from the blog.`,
+      confirmLabel: "Delete",
+      destructive: true,
+    });
+    if (!ok) return;
     try {
       await deletePost(post.id);
       toast.success("Post deleted.");

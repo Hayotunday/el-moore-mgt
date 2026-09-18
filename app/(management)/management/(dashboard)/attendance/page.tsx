@@ -15,12 +15,14 @@ import {
 } from "@/components/management/data-table";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/contexts/auth-context";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
 import { clockIn, clockOut, getTodayRecord, getMyAttendance } from "@/lib/api/attendance";
 import type { AttendanceRecord } from "@/lib/api/types";
 import { formatDate } from "@/lib/utils";
 
 export default function AttendancePage() {
   const { user } = useAuth();
+  const confirm = useConfirm();
   const [today, setToday] = useState<AttendanceRecord | null>(null);
   const [history, setHistory] = useState<AttendanceRecord[]>([]);
   const [busy, setBusy] = useState(false);
@@ -48,6 +50,12 @@ export default function AttendancePage() {
 
   const handleClockIn = async () => {
     if (!user) return;
+    const ok = await confirm({
+      title: "Clock In?",
+      description: "This will record your official start time for today.",
+      confirmLabel: "Clock In",
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await clockIn();
@@ -62,6 +70,13 @@ export default function AttendancePage() {
 
   const handleClockOut = async () => {
     if (!user) return;
+    const ok = await confirm({
+      title: "Clock Out?",
+      description: "This will record your end time. You won't be able to clock in again today.",
+      confirmLabel: "Clock Out",
+      destructive: true,
+    });
+    if (!ok) return;
     setBusy(true);
     try {
       await clockOut();

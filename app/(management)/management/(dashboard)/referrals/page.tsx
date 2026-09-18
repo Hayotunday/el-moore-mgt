@@ -19,8 +19,10 @@ import {
 import { Button } from "@/components/ui/button";
 import { listReferrals, markReferralPaid, type ReferralWithSale } from "@/lib/api/referrals";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
 
 export default function ReferralsPage() {
+  const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [referrals, setReferrals] = useState<ReferralWithSale[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
@@ -40,10 +42,16 @@ export default function ReferralsPage() {
     load();
   }, [load]);
 
-  const handleMarkPaid = async (id: string) => {
-    setPayingId(id);
+  const handleMarkPaid = async (referral: ReferralWithSale) => {
+    const ok = await confirm({
+      title: "Mark Commission as Paid?",
+      description: `This will record a payout of ${formatCurrency(referral.commissionAmount)} to the marketer. This action cannot be reversed.`,
+      confirmLabel: "Mark as Paid",
+    });
+    if (!ok) return;
+    setPayingId(referral.id);
     try {
-      await markReferralPaid(id);
+      await markReferralPaid(referral.id);
       toast.success("Commission marked as paid.");
       await load();
     } catch (err) {
@@ -123,7 +131,7 @@ export default function ReferralsPage() {
                   <Button
                     size="sm"
                     variant="outline"
-                    onClick={() => handleMarkPaid(referral.id)}
+                    onClick={() => handleMarkPaid(referral)}
                     disabled={payingId === referral.id}
                   >
                     {payingId === referral.id ? "Saving…" : "Mark as Paid"}

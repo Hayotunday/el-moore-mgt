@@ -42,10 +42,12 @@ import { listProperties } from "@/lib/api/properties";
 import { listUsers } from "@/lib/api/users";
 import type { Customer, ManagementUser, Property, SiteInspection } from "@/lib/api/types";
 import { blurActiveElement, getFullName } from "@/lib/utils";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
 
 const EMPTY_FORM = { customerId: "", propertyId: "", scheduledAt: "", inspectorId: "", notes: "" };
 
 export default function InspectionsPage() {
+  const confirm = useConfirm();
   const [inspections, setInspections] = useState<SiteInspection[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [properties, setProperties] = useState<Property[]>([]);
@@ -104,7 +106,38 @@ export default function InspectionsPage() {
   const scheduledCount = inspections.filter((i) => i.status === "SCHEDULED").length;
   const completedCount = inspections.filter((i) => i.status === "COMPLETED").length;
 
+  const INSPECTION_CONFIRM: Record<
+    SiteInspection["status"],
+    { title: string; description: string; confirmLabel: string; destructive?: boolean }
+  > = {
+    COMPLETED: {
+      title: "Mark as Completed?",
+      description: "This will close the inspection and mark it as successfully completed.",
+      confirmLabel: "Mark Complete",
+    },
+    NO_SHOW: {
+      title: "Mark as No-Show?",
+      description: "This will record that the customer did not attend the scheduled inspection.",
+      confirmLabel: "Mark No-Show",
+      destructive: true,
+    },
+    CANCELLED: {
+      title: "Cancel Inspection?",
+      description: "This will permanently cancel the inspection. A new one will need to be scheduled.",
+      confirmLabel: "Cancel Inspection",
+      destructive: true,
+    },
+    SCHEDULED: {
+      title: "Reopen Inspection?",
+      description: "This will set the inspection back to Scheduled.",
+      confirmLabel: "Reopen",
+    },
+  };
+
   const handleStatusChange = async (id: string, status: SiteInspection["status"]) => {
+    const opts = INSPECTION_CONFIRM[status];
+    const ok = await confirm(opts);
+    if (!ok) return;
     setBusyId(id);
     try {
       await updateInspection(id, { status });

@@ -36,8 +36,10 @@ import type {
   NotificationLogEntry,
 } from "@/lib/api/types";
 import { formatDate } from "@/lib/utils";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
 
 export default function NewsletterPage() {
+  const confirm = useConfirm();
   const [subscribers, setSubscribers] = useState<NewsletterSubscriber[]>([]);
   const [campaigns, setCampaigns] = useState<NewsletterCampaign[]>([]);
   const [notifLog, setNotifLog] = useState<NotificationLogEntry[]>([]);
@@ -78,6 +80,12 @@ export default function NewsletterPage() {
       toast.error("Subject and body are required.");
       return;
     }
+    const ok = await confirm({
+      title: "Send Campaign?",
+      description: `This will immediately email "${subject}" to ${activeSubscribers.length} active subscriber${activeSubscribers.length === 1 ? "" : "s"}. This cannot be undone.`,
+      confirmLabel: "Send",
+    });
+    if (!ok) return;
     setSending(true);
     try {
       await createAndSendCampaign({ subject, body });

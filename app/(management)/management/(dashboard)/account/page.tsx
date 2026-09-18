@@ -9,7 +9,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { useAuth } from "@/contexts/auth-context";
-import { updateUser, uploadUserAvatar, removeUserAvatar } from "@/lib/api/users";
+import {
+  updateUser,
+  uploadUserAvatar,
+  removeUserAvatar,
+} from "@/lib/api/users";
 import { ROLE_LABELS } from "@/lib/rbac";
 import { formatDate, getFullName, getInitials } from "@/lib/utils";
 
@@ -40,11 +44,18 @@ export default function AccountPage() {
     }
     setSavingProfile(true);
     try {
-      await updateUser(user.id, { firstName, middleName: middleName || undefined, lastName, email });
+      await updateUser(user.id, {
+        firstName,
+        middleName: middleName || undefined,
+        lastName,
+        email,
+      });
       await refreshProfile();
       toast.success("Profile updated.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not update profile.");
+      toast.error(
+        err instanceof Error ? err.message : "Could not update profile.",
+      );
     } finally {
       setSavingProfile(false);
     }
@@ -66,7 +77,9 @@ export default function AccountPage() {
       setNewPassword("");
       setConfirmPassword("");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not change password.");
+      toast.error(
+        err instanceof Error ? err.message : "Could not change password.",
+      );
     } finally {
       setSavingPassword(false);
     }
@@ -80,7 +93,9 @@ export default function AccountPage() {
       await refreshProfile();
       toast.success("Avatar updated.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not upload avatar.");
+      toast.error(
+        err instanceof Error ? err.message : "Could not upload avatar.",
+      );
     } finally {
       setUploadingAvatar(false);
     }
@@ -93,7 +108,9 @@ export default function AccountPage() {
       await refreshProfile();
       toast.success("Avatar removed.");
     } catch (err) {
-      toast.error(err instanceof Error ? err.message : "Could not remove avatar.");
+      toast.error(
+        err instanceof Error ? err.message : "Could not remove avatar.",
+      );
     } finally {
       setRemovingAvatar(false);
     }
@@ -101,7 +118,10 @@ export default function AccountPage() {
 
   return (
     <div className="space-y-8 max-w-3xl">
-      <PageHeader title="My Account" subtitle="Your personal profile and login details." />
+      <PageHeader
+        title="My Account"
+        subtitle="Your personal profile and login details."
+      />
 
       {/* Identity */}
       <div className="rounded-lg border border-border p-6 flex flex-col sm:flex-row gap-6 sm:items-center">
@@ -137,7 +157,9 @@ export default function AccountPage() {
           </label>
         </div>
         <div className="flex-1 space-y-1">
-          <h2 className="text-lg font-semibold text-foreground">{getFullName(user)}</h2>
+          <h2 className="text-lg font-semibold text-foreground">
+            {getFullName(user)}
+          </h2>
           <p className="text-sm text-muted-foreground">{user.email}</p>
           <div className="flex flex-wrap items-center gap-2 pt-1">
             <span className="rounded-sm bg-muted px-2 py-0.5 text-xs font-medium text-foreground">
@@ -170,24 +192,34 @@ export default function AccountPage() {
         <div className="grid sm:grid-cols-2 gap-4">
           <div className="grid gap-2">
             <Label>First Name</Label>
-            <Input value={firstName} onChange={(e) => setFirstName(e.target.value)} />
+            <Input
+              value={firstName}
+              onChange={(e) => setFirstName(e.target.value)}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Last Name</Label>
-            <Input value={lastName} onChange={(e) => setLastName(e.target.value)} />
+            <Input
+              value={lastName}
+              onChange={(e) => setLastName(e.target.value)}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Middle Name (optional)</Label>
-            <Input value={middleName} onChange={(e) => setMiddleName(e.target.value)} />
+            <Input
+              value={middleName}
+              onChange={(e) => setMiddleName(e.target.value)}
+            />
           </div>
           <div className="grid gap-2">
             <Label>Email</Label>
-            <Input type="email" value={email} onChange={(e) => setEmail(e.target.value)} />
+            <Input type="email" value={email} disabled />
           </div>
         </div>
         <div className="flex justify-end">
           <Button onClick={handleSaveProfile} disabled={savingProfile}>
-            <Save className="h-4 w-4" /> {savingProfile ? "Saving…" : "Save Changes"}
+            <Save className="h-4 w-4" />{" "}
+            {savingProfile ? "Saving…" : "Save Changes"}
           </Button>
         </div>
       </div>
@@ -218,7 +250,8 @@ export default function AccountPage() {
         </div>
         <div className="flex justify-end">
           <Button onClick={handleChangePassword} disabled={savingPassword}>
-            <KeyRound className="h-4 w-4" /> {savingPassword ? "Updating…" : "Update Password"}
+            <KeyRound className="h-4 w-4" />{" "}
+            {savingPassword ? "Updating…" : "Update Password"}
           </Button>
         </div>
       </div>

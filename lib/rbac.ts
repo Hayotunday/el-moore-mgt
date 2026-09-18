@@ -13,6 +13,8 @@ import {
   DollarSign,
   MapPinned,
   HardHat,
+  Handshake,
+  CircleUser,
   type LucideIcon,
 } from "lucide-react";
 import type { Role } from "@/lib/api/types";
@@ -52,6 +54,7 @@ export type PageKey =
   | "properties"
   | "sales"
   | "referrals"
+  | "marketers"
   | "inspections"
   | "newsletter"
   | "blog"
@@ -61,7 +64,8 @@ export type PageKey =
   | "attendance"
   | "daily-report"
   | "finance"
-  | "projects";
+  | "projects"
+  | "account";
 
 export interface PageDefinition {
   key: PageKey;
@@ -103,6 +107,14 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     path: "/management/referrals",
     description: "Marketer commissions",
     icon: Share2,
+    roles: ["MD", "GM", "OFFICE_ADMIN"],
+  },
+  {
+    key: "marketers",
+    label: "Affiliate Marketers",
+    path: "/management/marketers",
+    description: "Marketer registrations, approvals & metrics",
+    icon: Handshake,
     roles: ["MD", "GM", "OFFICE_ADMIN"],
   },
   {
@@ -198,6 +210,14 @@ export const PAGE_REGISTRY: PageDefinition[] = [
     description: "Construction progress & work items",
     icon: HardHat,
     roles: ["MD", "GM", "PROJECT_MANAGER"],
+  },
+  {
+    key: "account",
+    label: "My Account",
+    path: "/management/account",
+    description: "Profile & security settings",
+    icon: CircleUser,
+    roles: [...MANAGEMENT_ROLES],
   },
 ];
 

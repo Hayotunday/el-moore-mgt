@@ -7,11 +7,13 @@ import PageHeader from "@/components/management/page-header";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useAuth } from "@/contexts/auth-context";
+import { useConfirm } from "@/contexts/confirm-dialog-context";
 import { getTodayReportForStaff, getMyReports, submitReport } from "@/lib/api/daily-reports";
 import type { DailyTaskReport } from "@/lib/api/types";
 import { formatDate } from "@/lib/utils";
 
 export default function DailyReportPage() {
+  const confirm = useConfirm();
   const { user } = useAuth();
   const [today, setToday] = useState<DailyTaskReport | null>(null);
   const [history, setHistory] = useState<DailyTaskReport[]>([]);
@@ -40,10 +42,25 @@ export default function DailyReportPage() {
       toast.error("Write something before submitting.");
       return;
     }
+    const isUpdate = Boolean(today);
+    const ok = await confirm(
+      isUpdate
+        ? {
+            title: "Update Today's Report?",
+            description: "This will overwrite your previously submitted report for today.",
+            confirmLabel: "Update Report",
+          }
+        : {
+            title: "Submit Daily Report?",
+            description: "Your report will be recorded and visible to management.",
+            confirmLabel: "Submit Report",
+          },
+    );
+    if (!ok) return;
     setSaving(true);
     try {
       await submitReport(content.trim());
-      toast.success(today ? "Report updated." : "Report submitted.");
+      toast.success(isUpdate ? "Report updated." : "Report submitted.");
       setEditing(false);
       await load();
     } catch (err) {
