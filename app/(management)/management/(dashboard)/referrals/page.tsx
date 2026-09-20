@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, useMemo } from "react";
 import Link from "next/link";
-import { Share2, Info, ArrowRight } from "lucide-react";
+import { Share2, Info, ArrowRight, Eye } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
@@ -18,19 +18,27 @@ import {
 } from "@/components/management/data-table";
 import { Button } from "@/components/ui/button";
 import { listReferrals, markReferralPaid, type ReferralWithSale } from "@/lib/api/referrals";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { listUsers } from "@/lib/api/users";
+import type { ManagementUser } from "@/lib/api/types";
+import { formatCurrency, formatDate, getFullName } from "@/lib/utils";
 import { useConfirm } from "@/contexts/confirm-dialog-context";
 
 export default function ReferralsPage() {
   const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
   const [referrals, setReferrals] = useState<ReferralWithSale[]>([]);
+  const [marketers, setMarketers] = useState<ManagementUser[]>([]);
   const [payingId, setPayingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setReferrals(await listReferrals());
+      const [refsList, usersList] = await Promise.all([
+        listReferrals(),
+        listUsers("AFFILIATE_MARKETER").catch(() => [] as ManagementUser[]),
+      ]);
+      setReferrals(refsList);
+      setMarketers(usersList);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load referrals.");
     } finally {
@@ -41,6 +49,12 @@ export default function ReferralsPage() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const marketerById = useMemo(() => {
+    const map = new Map<string, ManagementUser>();
+    marketers.forEach((m) => map.set(m.id, m));
+    return map;
+  }, [marketers]);
 
   const handleMarkPaid = async (referral: ReferralWithSale) => {
     const ok = await confirm({
@@ -117,33 +131,61 @@ export default function ReferralsPage() {
         </DataTableHead>
         <DataTableBody>
           {!loading && referrals.length === 0 && <DataTableEmpty colSpan={6} />}
-          {referrals.map((referral, idx) => (
-            <DataTableRow key={referral.id} index={idx}>
-              <DataTableCell className="font-medium">{referral.marketerId}</DataTableCell>
-              <DataTableCell>{referral.buyerName}</DataTableCell>
-              <DataTableCell align="right">{formatCurrency(referral.saleAmount)}</DataTableCell>
-              <DataTableCell align="right">{formatCurrency(referral.commissionAmount)}</DataTableCell>
-              <DataTableCell align="center">
-                <StatusBadge status={referral.status} />
-              </DataTableCell>
-              <DataTableCell align="center">
-                {referral.status === "PENDING" ? (
-                  <Button
-                    size="sm"
-                    variant="outline"
-                    onClick={() => handleMarkPaid(referral)}
-                    disabled={payingId === referral.id}
-                  >
-                    {payingId === referral.id ? "Saving…" : "Mark as Paid"}
-                  </Button>
-                ) : (
-                  <span className="text-xs text-muted-foreground">
-                    Paid {referral.paidAt ? formatDate(referral.paidAt) : ""}
-                  </span>
-                )}
-              </DataTableCell>
-            </DataTableRow>
-          ))}
+          {referrals.map((referral, idx) => {
+            const marketer = marketerById.get(referral.marketerId);
+            const displayMarketer = marketer
+              ? `${getFullName(marketer)} (${marketer.email})`
+              : referral.marketerId;
+
+            return (
+              <DataTableRow key={referral.id} index={idx}>
+                <DataTableCell className="font-medium">
+                  {marketer ? (
+                    <div>
+                      <p className="font-semibold text-foreground text-sm">{getFullName(marketer)}</p>
+                      <p className="text-xs text-muted-foreground">{marketer.email}</p>
+                    </div>
+                  ) : (
+                    <span className="font-mono text-xs">{referral.marketerId}</span>
+                  )}
+                </DataTableCell>
+                <DataTableCell>{referral.buyerName}</DataTableCell>
+                <DataTableCell align="right">{formatCurrency(referral.saleAmount)}</DataTableCell>
+                <DataTableCell align="right" className="font-bold text-emerald-600 dark:text-emerald-400">
+                  {formatCurrency(referral.commissionAmount)}
+                </DataTableCell>
+                <DataTableCell align="center">
+                  <StatusBadge status={referral.status} />
+                </DataTableCell>
+                <DataTableCell align="center">
+                  <div className="flex justify-center items-center gap-1.5">
+                    {referral.saleId && (
+                      <Link href={`/management/sales/${referral.saleId}`}>
+                        <Button size="sm" variant="outline" className="h-8 gap-1">
+                          <Eye className="h-3.5 w-3.5" /> Sale Details
+                        </Button>
+                      </Link>
+                    )}
+                    {referral.status === "PENDING" ? (
+                      <Button
+                        size="sm"
+                        variant="default"
+                        className="h-8 bg-emerald-600 hover:bg-emerald-700 text-white"
+                        onClick={() => handleMarkPaid(referral)}
+                        disabled={payingId === referral.id}
+                      >
+                        {payingId === referral.id ? "Saving…" : "Mark Paid"}
+                      </Button>
+                    ) : (
+                      <span className="text-xs text-muted-foreground">
+                        Paid {referral.paidAt ? formatDate(referral.paidAt) : ""}
+                      </span>
+                    )}
+                  </div>
+                </DataTableCell>
+              </DataTableRow>
+            );
+          })}
         </DataTableBody>
       </DataTable>
     </div>

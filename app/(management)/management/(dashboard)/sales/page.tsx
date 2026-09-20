@@ -2,7 +2,8 @@
 
 import { Suspense, useEffect, useMemo, useState, useCallback, useRef } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
-import { Wallet, Plus, Search, UserCheck, UserPlus, X } from "lucide-react";
+import Link from "next/link";
+import { Wallet, Plus, Search, UserCheck, UserPlus, X, Eye } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
@@ -90,15 +91,23 @@ function SalesPageContent() {
   const pathname = usePathname();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const tabParam = searchParams.get("tab");
   const initialTab =
-    searchParams.get("tab") === "outright" ? "outright" : "installment";
+    tabParam === "outright" ? "outright" : tabParam === "installment" ? "installment" : "all";
 
-  const [tab, setTab] = useState<"installment" | "outright">(initialTab);
+  const [tab, setTab] = useState<"all" | "installment" | "outright">(initialTab);
   const [loading, setLoading] = useState(true);
   const [installmentSales, setInstallmentSales] = useState<SaleWithDetails[]>(
     [],
   );
   const [outrightSales, setOutrightSales] = useState<SaleWithDetails[]>([]);
+
+  const allSales = useMemo(() => {
+    const combined = [...installmentSales, ...outrightSales];
+    return combined.sort(
+      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+    );
+  }, [installmentSales, outrightSales]);
   const [availableProperties, setAvailableProperties] = useState<Property[]>(
     [],
   );
@@ -165,7 +174,8 @@ function SalesPageContent() {
   }, [staff]);
 
   const handleTabChange = (value: string) => {
-    const next = value === "outright" ? "outright" : "installment";
+    const next =
+      value === "outright" ? "outright" : value === "installment" ? "installment" : "all";
     setTab(next);
     router.replace(`${pathname}?tab=${next}`, { scroll: false });
   };
@@ -392,9 +402,114 @@ function SalesPageContent() {
 
       <Tabs value={tab} onValueChange={handleTabChange}>
         <TabsList>
-          <TabsTrigger value="installment">Installment Purchases</TabsTrigger>
-          <TabsTrigger value="outright">Outright Purchases</TabsTrigger>
+          <TabsTrigger value="all">All Sales ({allSales.length})</TabsTrigger>
+          <TabsTrigger value="installment">Installment ({installmentSales.length})</TabsTrigger>
+          <TabsTrigger value="outright">Outright ({outrightSales.length})</TabsTrigger>
         </TabsList>
+
+        <TabsContent value="all" className="mt-6">
+          <DataTable>
+            <DataTableHead>
+              <DataTableHeadCell>Property</DataTableHeadCell>
+              <DataTableHeadCell>Buyer</DataTableHeadCell>
+              <DataTableHeadCell align="center">Type</DataTableHeadCell>
+              <DataTableHeadCell align="right">Total Amount</DataTableHeadCell>
+              <DataTableHeadCell align="right">Paid / Balance</DataTableHeadCell>
+              <DataTableHeadCell align="center">Status</DataTableHeadCell>
+              <DataTableHeadCell align="center">Action</DataTableHeadCell>
+            </DataTableHead>
+            <DataTableBody>
+              {!loading && allSales.length === 0 && (
+                <DataTableEmpty colSpan={7} />
+              )}
+              {allSales.map((sale, idx) => {
+                const voided = sale.status === "VOIDED";
+                const isInstallment = sale.saleType === "INSTALLMENT";
+                return (
+                  <DataTableRow
+                    key={sale.id}
+                    index={idx}
+                    className={voided ? "opacity-50" : undefined}
+                  >
+                    <DataTableCell>
+                      <p className="font-medium">{sale.propertyTitle}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {formatDate(sale.createdAt)}
+                      </p>
+                    </DataTableCell>
+                    <DataTableCell>
+                      <p>{buyerDisplayName(sale)}</p>
+                      <p className="text-xs text-muted-foreground">
+                        {sale.buyerPhone}
+                      </p>
+                    </DataTableCell>
+                    <DataTableCell align="center">
+                      <StatusBadge status={sale.saleType} />
+                    </DataTableCell>
+                    <DataTableCell align="right" className="font-medium">
+                      {formatCurrency(sale.totalAmount)}
+                    </DataTableCell>
+                    <DataTableCell align="right">
+                      {isInstallment ? (
+                        <div>
+                          <p className="font-semibold text-foreground">
+                            {formatCurrency(sale.amountPaid)}
+                          </p>
+                          <p
+                            className={
+                              sale.balance > 0
+                                ? "text-[11px] text-destructive font-semibold"
+                                : "text-[11px] text-emerald-600 font-semibold"
+                            }
+                          >
+                            {sale.balance > 0
+                              ? `Bal: ${formatCurrency(sale.balance)}`
+                              : "Fully Paid"}
+                          </p>
+                        </div>
+                      ) : (
+                        <span className="font-semibold text-emerald-600">
+                          {formatCurrency(sale.totalAmount)}
+                        </span>
+                      )}
+                    </DataTableCell>
+                    <DataTableCell align="center">
+                      <StatusBadge status={sale.status ?? "ACTIVE"} />
+                    </DataTableCell>
+                    <DataTableCell align="center">
+                      <div className="flex justify-center gap-1">
+                        <Link href={`/management/sales/${sale.id}`}>
+                          <Button size="sm" variant="outline" className="gap-1">
+                            <Eye className="h-3.5 w-3.5" /> Details
+                          </Button>
+                        </Link>
+                        {isInstallment && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            disabled={voided}
+                            onClick={() => setPaymentSale(sale)}
+                          >
+                            Log Payment
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          disabled={voided || voidingId === sale.id}
+                          onClick={() => handleVoid(sale.id)}
+                        >
+                          Void
+                        </Button>
+                      </div>
+                    </DataTableCell>
+                  </DataTableRow>
+                );
+              })}
+            </DataTableBody>
+          </DataTable>
+        </TabsContent>
 
         <TabsContent value="installment" className="mt-6">
           <DataTable>
@@ -453,6 +568,11 @@ function SalesPageContent() {
                     </DataTableCell>
                     <DataTableCell align="center">
                       <div className="flex justify-center gap-1">
+                        <Link href={`/management/sales/${sale.id}`}>
+                          <Button size="sm" variant="outline" className="gap-1">
+                            <Eye className="h-3.5 w-3.5" /> Details
+                          </Button>
+                        </Link>
                         <Button
                           size="sm"
                           variant="outline"
@@ -527,15 +647,22 @@ function SalesPageContent() {
                       <StatusBadge status={sale.status ?? "ACTIVE"} />
                     </DataTableCell>
                     <DataTableCell align="center">
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        className="text-destructive hover:text-destructive"
-                        disabled={voided || voidingId === sale.id}
-                        onClick={() => handleVoid(sale.id)}
-                      >
-                        Void
-                      </Button>
+                      <div className="flex justify-center gap-1">
+                        <Link href={`/management/sales/${sale.id}`}>
+                          <Button size="sm" variant="outline" className="gap-1">
+                            <Eye className="h-3.5 w-3.5" /> Details
+                          </Button>
+                        </Link>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          className="text-destructive hover:text-destructive"
+                          disabled={voided || voidingId === sale.id}
+                          onClick={() => handleVoid(sale.id)}
+                        >
+                          Void
+                        </Button>
+                      </div>
                     </DataTableCell>
                   </DataTableRow>
                 );

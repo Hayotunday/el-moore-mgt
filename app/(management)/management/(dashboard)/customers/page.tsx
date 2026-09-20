@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { Users, X, Plus, Pencil, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { Users, X, Plus, Pencil, Trash2, Eye } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
@@ -278,6 +279,11 @@ export default function CustomersPage() {
                 </DataTableCell>
                 <DataTableCell align="right">
                   <div className="flex justify-end gap-1">
+                    <Link href={`/management/customers/${customer.id}`}>
+                      <Button size="icon-sm" variant="ghost" title="View CRM Profile">
+                        <Eye className="h-4 w-4" />
+                      </Button>
+                    </Link>
                     <Button size="icon-sm" variant="ghost" onClick={() => openEdit(customer)}>
                       <Pencil className="h-4 w-4" />
                     </Button>

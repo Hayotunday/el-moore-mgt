@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
+import Link from "next/link";
 import {
   Handshake,
   CheckCircle2,
@@ -458,14 +459,24 @@ export default function AffiliateMarketersPage() {
                             </Button>
                           )}
 
+                          <Link href={`/management/marketers/${m.id}`}>
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="h-8 gap-1"
+                            >
+                              <Eye className="h-3.5 w-3.5" />
+                              Profile
+                            </Button>
+                          </Link>
+
                           <Button
                             size="sm"
                             variant="ghost"
                             className="h-8 gap-1 text-muted-foreground hover:text-foreground"
                             onClick={() => openMarketerDrawer(m)}
                           >
-                            <Eye className="h-3.5 w-3.5" />
-                            Details
+                            Drawer
                           </Button>
                         </div>
                       </DataTableCell>

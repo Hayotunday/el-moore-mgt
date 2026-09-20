@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useMemo, useState, useCallback } from "react";
-import { MapPinned, CheckCircle2, Clock, Plus } from "lucide-react";
+import Link from "next/link";
+import { MapPinned, CheckCircle2, Clock, Plus, Eye } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
 import StatCard from "@/components/management/stat-card";
@@ -261,38 +262,33 @@ export default function InspectionsPage() {
                   <StatusBadge status={inspection.status} />
                 </DataTableCell>
                 <DataTableCell align="center">
-                  {inspection.status === "SCHEDULED" ? (
-                    <div className="flex justify-center gap-1">
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        disabled={busyId === inspection.id}
-                        onClick={() => handleStatusChange(inspection.id, "COMPLETED")}
-                      >
-                        Complete
+                  <div className="flex justify-center gap-1 items-center">
+                    <Link href={`/management/inspections/${inspection.id}`}>
+                      <Button size="sm" variant="outline" className="gap-1 h-8">
+                        <Eye className="h-3.5 w-3.5" /> Details
                       </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === inspection.id}
-                        onClick={() => handleStatusChange(inspection.id, "NO_SHOW")}
-                      >
-                        No-Show
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        disabled={busyId === inspection.id}
-                        onClick={() => handleStatusChange(inspection.id, "CANCELLED")}
-                      >
-                        Cancel
-                      </Button>
-                    </div>
-                  ) : (
-                    <span className="text-xs text-muted-foreground">
-                      {inspection.followUpSent ? "Follow-up sent" : "—"}
-                    </span>
-                  )}
+                    </Link>
+                    {inspection.status === "SCHEDULED" && (
+                      <>
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          disabled={busyId === inspection.id}
+                          onClick={() => handleStatusChange(inspection.id, "COMPLETED")}
+                        >
+                          Complete
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          disabled={busyId === inspection.id}
+                          onClick={() => handleStatusChange(inspection.id, "CANCELLED")}
+                        >
+                          Cancel
+                        </Button>
+                      </>
+                    )}
+                  </div>
                 </DataTableCell>
               </DataTableRow>
             );
