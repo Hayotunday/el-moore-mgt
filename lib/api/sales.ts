@@ -17,6 +17,35 @@ export interface SaleWithDetails extends Sale {
   balance: number;
 }
 
+export interface DashboardSale {
+  id: string;
+  propertyName: string;
+  saleDate: string;
+  firstName: string | null;
+  lastName: string | null;
+  buyerPhone: string;
+  totalAmount: number;
+  paidAmount: number;
+  balance: number;
+  saleType: SaleType;
+  status: string;
+  soldById: string | null;
+  marketerId: string | null;
+}
+
+export interface SalesDashboardSummary {
+  outrightCount: number;
+  outrightTotal: number;
+  installmentCount: number;
+  installmentTotal: number;
+  outstandingBalance: number;
+}
+
+export interface SalesDashboardResponse {
+  summary: SalesDashboardSummary;
+  sales: DashboardSale[];
+}
+
 async function joinDetails(sale: Sale, propertyTitle: string): Promise<SaleWithDetails> {
   let plan: InstallmentPlan | null = null;
   let payments: InstallmentPayment[] = [];
@@ -65,23 +94,17 @@ export async function listOverdueSales(): Promise<Sale[]> {
   return apiFetch<Sale[]>("/sales/overdue");
 }
 
-/**
- * Not wired to any page yet — the Sales page currently composes its stats and tables
- * from `listSales()` + client-side joins, which already works. This purpose-built
- * endpoint could replace that, but its response shape isn't documented and hasn't been
- * verified against a live authenticated call.
- */
-export async function getSalesDashboard(params: {
+export async function getSalesDashboard(params?: {
   saleType?: SaleType;
   limit?: number;
   offset?: number;
-}): Promise<unknown> {
+}): Promise<SalesDashboardResponse> {
   const query = new URLSearchParams();
-  if (params.saleType) query.set("saleType", params.saleType);
-  if (params.limit) query.set("limit", String(params.limit));
-  if (params.offset) query.set("offset", String(params.offset));
+  if (params?.saleType) query.set("saleType", params.saleType);
+  if (params?.limit) query.set("limit", String(params.limit));
+  if (params?.offset) query.set("offset", String(params.offset));
   const qs = query.toString();
-  return apiFetch(`/sales/dashboard${qs ? `?${qs}` : ""}`);
+  return apiFetch<SalesDashboardResponse>(`/sales/dashboard${qs ? `?${qs}` : ""}`);
 }
 
 export async function getSale(id: string): Promise<Sale> {

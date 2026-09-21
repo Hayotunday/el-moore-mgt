@@ -39,43 +39,40 @@ import {
 import { useAuth } from "@/contexts/auth-context";
 import { useConfirm } from "@/contexts/confirm-dialog-context";
 import {
-  listSales,
+  getSalesDashboard,
   listOverdueSales,
   addInstallmentPayment,
   createSale,
   voidSale,
-  type SaleWithDetails,
+  type DashboardSale,
 } from "@/lib/api/sales";
 import { listProperties } from "@/lib/api/properties";
 import { listUsers } from "@/lib/api/users";
 import { listCustomers, createCustomer } from "@/lib/api/customers";
-import type { ManagementUser, Property, SaleType, Customer } from "@/lib/api/types";
+import type { ManagementUser, Property, Customer } from "@/lib/api/types";
 import { formatCurrency, formatDate, getFullName } from "@/lib/utils";
 
 const EMPTY_SALE_FORM = {
   propertyId: "",
-  // "existing" = picked from customer list, "new" = manual entry
   buyerMode: "existing" as "existing" | "new",
-  // existing customer fields (populated when a customer is selected)
   selectedCustomerId: "",
-  // manual entry fields (used when buyerMode === "new")
   buyerFirstName: "",
   buyerMiddleName: "",
   buyerLastName: "",
   buyerPhone: "",
-  buyerEmail: "", // required for new buyers
-  saleType: "OUTRIGHT" as SaleType,
+  buyerEmail: "",
+  saleType: "OUTRIGHT" as "OUTRIGHT" | "INSTALLMENT",
   totalAmount: "",
   marketerId: "",
 };
 
-function buyerDisplayName(sale: SaleWithDetails): string {
+function buyerDisplayName(sale: DashboardSale): string {
   const split = getFullName({
-    firstName: sale.buyerFirstName,
-    middleName: sale.buyerMiddleName,
-    lastName: sale.buyerLastName,
+    firstName: sale.firstName,
+    middleName: null,
+    lastName: sale.lastName,
   });
-  return split || sale.buyerName || "—";
+  return split || "—";
 }
 
 export default function SalesPage() {
@@ -97,31 +94,25 @@ function SalesPageContent() {
 
   const [tab, setTab] = useState<"all" | "installment" | "outright">(initialTab);
   const [loading, setLoading] = useState(true);
-  const [installmentSales, setInstallmentSales] = useState<SaleWithDetails[]>(
-    [],
-  );
-  const [outrightSales, setOutrightSales] = useState<SaleWithDetails[]>([]);
-
-  const allSales = useMemo(() => {
-    const combined = [...installmentSales, ...outrightSales];
-    return combined.sort(
-      (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
-    );
-  }, [installmentSales, outrightSales]);
-  const [availableProperties, setAvailableProperties] = useState<Property[]>(
-    [],
-  );
+  const [allSales, setAllSales] = useState<DashboardSale[]>([]);
+  const [availableProperties, setAvailableProperties] = useState<Property[]>([]);
   const [staff, setStaff] = useState<ManagementUser[]>([]);
-  const [approvedMarketers, setApprovedMarketers] = useState<ManagementUser[]>(
-    [],
-  );
+  const [approvedMarketers, setApprovedMarketers] = useState<ManagementUser[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [customerSearch, setCustomerSearch] = useState("");
   const [customerDropdownOpen, setCustomerDropdownOpen] = useState(false);
   const customerSearchRef = useRef<HTMLInputElement>(null);
   const [overdueCount, setOverdueCount] = useState(0);
 
-  const [paymentSale, setPaymentSale] = useState<SaleWithDetails | null>(null);
+  const [summary, setSummary] = useState({
+    outrightCount: 0,
+    outrightTotal: 0,
+    installmentCount: 0,
+    installmentTotal: 0,
+    outstandingBalance: 0,
+  });
+
+  const [paymentSale, setPaymentSale] = useState<DashboardSale | null>(null);
   const [paymentAmount, setPaymentAmount] = useState("");
   const [saving, setSaving] = useState(false);
   const [voidingId, setVoidingId] = useState<string | null>(null);
@@ -134,17 +125,16 @@ function SalesPageContent() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [installments, outright, properties, users, marketersList, customersList] =
+      const [dashboard, properties, users, marketersList, customersList] =
         await Promise.all([
-          listSales("INSTALLMENT"),
-          listSales("OUTRIGHT"),
+          getSalesDashboard(),
           listProperties("AVAILABLE"),
           listUsers(),
           listUsers("AFFILIATE_MARKETER").catch(() => [] as ManagementUser[]),
           listCustomers().catch(() => [] as Customer[]),
         ]);
-      setInstallmentSales(installments);
-      setOutrightSales(outright);
+      setAllSales(dashboard.sales);
+      setSummary(dashboard.summary);
       setAvailableProperties(properties);
       setStaff(users);
       setApprovedMarketers(
@@ -166,6 +156,15 @@ function SalesPageContent() {
   useEffect(() => {
     load();
   }, [load]);
+
+  const installmentSales = useMemo(
+    () => allSales.filter((s) => s.saleType === "INSTALLMENT"),
+    [allSales],
+  );
+  const outrightSales = useMemo(
+    () => allSales.filter((s) => s.saleType === "OUTRIGHT"),
+    [allSales],
+  );
 
   const staffNameById = useMemo(() => {
     const map = new Map<string, string>();
@@ -272,7 +271,6 @@ function SalesPageContent() {
     try {
       let resolvedCustomerId = saleForm.selectedCustomerId || undefined;
 
-      // Create customer record first when the buyer is new
       if (!isExisting) {
         const newCustomer = await createCustomer({
           firstName: saleForm.buyerFirstName,
@@ -282,7 +280,6 @@ function SalesPageContent() {
           email: saleForm.buyerEmail,
         });
         resolvedCustomerId = newCustomer.id;
-        // Also refresh the local customer list so next sale sees them
         setCustomers((prev) => [newCustomer, ...prev]);
       }
 
@@ -348,16 +345,6 @@ function SalesPageContent() {
     }
   };
 
-  const totalOutright = outrightSales
-    .filter((s) => s.status !== "VOIDED")
-    .reduce((sum, s) => sum + Number(s.totalAmount), 0);
-  const totalInstallment = installmentSales
-    .filter((s) => s.status !== "VOIDED")
-    .reduce((sum, s) => sum + Number(s.totalAmount), 0);
-  const totalOutstanding = installmentSales
-    .filter((s) => s.status !== "VOIDED")
-    .reduce((sum, s) => sum + s.balance, 0);
-
   return (
     <div className="space-y-8">
       <PageHeader
@@ -373,20 +360,20 @@ function SalesPageContent() {
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard
           label="Outright Sales"
-          value={outrightSales.length}
-          sublabel={formatCurrency(totalOutright)}
+          value={summary.outrightCount}
+          sublabel={formatCurrency(summary.outrightTotal)}
           icon={<Wallet className="h-6 w-6" />}
         />
         <StatCard
           label="Installment Sales"
-          value={installmentSales.length}
-          sublabel={formatCurrency(totalInstallment)}
+          value={summary.installmentCount}
+          sublabel={formatCurrency(summary.installmentTotal)}
           icon={<Wallet className="h-6 w-6" />}
           variant="gold"
         />
         <StatCard
           label="Outstanding Balance"
-          value={formatCurrency(totalOutstanding)}
+          value={formatCurrency(summary.outstandingBalance)}
           sublabel="Across installment plans"
           icon={<Wallet className="h-6 w-6" />}
           variant="destructive"
@@ -432,9 +419,9 @@ function SalesPageContent() {
                     className={voided ? "opacity-50" : undefined}
                   >
                     <DataTableCell>
-                      <p className="font-medium">{sale.propertyTitle}</p>
+                      <p className="font-medium">{sale.propertyName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(sale.createdAt)}
+                        {formatDate(sale.saleDate)}
                       </p>
                     </DataTableCell>
                     <DataTableCell>
@@ -453,7 +440,7 @@ function SalesPageContent() {
                       {isInstallment ? (
                         <div>
                           <p className="font-semibold text-foreground">
-                            {formatCurrency(sale.amountPaid)}
+                            {formatCurrency(sale.paidAmount)}
                           </p>
                           <p
                             className={
@@ -535,9 +522,9 @@ function SalesPageContent() {
                     className={voided ? "opacity-50" : undefined}
                   >
                     <DataTableCell>
-                      <p className="font-medium">{sale.propertyTitle}</p>
+                      <p className="font-medium">{sale.propertyName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(sale.createdAt)}
+                        {formatDate(sale.saleDate)}
                       </p>
                     </DataTableCell>
                     <DataTableCell>
@@ -550,7 +537,7 @@ function SalesPageContent() {
                       {formatCurrency(sale.totalAmount)}
                     </DataTableCell>
                     <DataTableCell align="right">
-                      {formatCurrency(sale.amountPaid)}
+                      {formatCurrency(sale.paidAmount)}
                     </DataTableCell>
                     <DataTableCell align="right">
                       <span
@@ -623,9 +610,9 @@ function SalesPageContent() {
                     className={voided ? "opacity-50" : undefined}
                   >
                     <DataTableCell>
-                      <p className="font-medium">{sale.propertyTitle}</p>
+                      <p className="font-medium">{sale.propertyName}</p>
                       <p className="text-xs text-muted-foreground">
-                        {formatDate(sale.createdAt)}
+                        {formatDate(sale.saleDate)}
                       </p>
                     </DataTableCell>
                     <DataTableCell>
@@ -686,7 +673,7 @@ function SalesPageContent() {
           {paymentSale && (
             <div className="space-y-4 py-2">
               <p className="text-sm text-muted-foreground">
-                {paymentSale.propertyTitle} — balance{" "}
+                {paymentSale.propertyName} — balance{" "}
                 <span className="font-semibold text-foreground">
                   {formatCurrency(paymentSale.balance)}
                 </span>
@@ -756,9 +743,7 @@ function SalesPageContent() {
                 </SelectContent>
               </Select>
             </div>
-            {/* ── Buyer Section ── */}
             <div className="grid gap-3 rounded-md border bg-muted/20 p-3">
-              {/* Mode toggle */}
               <div className="flex items-center justify-between">
                 <p className="text-sm font-semibold text-foreground">Buyer</p>
                 <div className="flex rounded-md border overflow-hidden text-xs font-medium">
@@ -797,7 +782,6 @@ function SalesPageContent() {
               {saleForm.buyerMode === "existing" ? (
                 <div className="grid gap-2">
                   {selectedCustomer ? (
-                    /* Selected customer chip */
                     <div className="flex items-center justify-between rounded-md border bg-card px-3 py-2 shadow-sm">
                       <div>
                         <p className="text-sm font-semibold text-foreground">{getFullName(selectedCustomer)}</p>
@@ -813,7 +797,6 @@ function SalesPageContent() {
                       </button>
                     </div>
                   ) : (
-                    /* Customer search */
                     <div className="relative">
                       <div className="relative">
                         <Search className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-muted-foreground pointer-events-none" />
@@ -861,7 +844,6 @@ function SalesPageContent() {
                   )}
                 </div>
               ) : (
-                /* New buyer fields */
                 <div className="grid gap-3">
                   <div className="grid grid-cols-2 gap-3">
                     <div className="grid gap-1.5">
@@ -930,7 +912,7 @@ function SalesPageContent() {
                   <Select
                     value={saleForm.saleType}
                     onValueChange={(v) => {
-                      const newType = v as SaleType;
+                      const newType = v as "OUTRIGHT" | "INSTALLMENT";
                       const chosen = availableProperties.find(
                         (p) => p.id === saleForm.propertyId,
                       );
