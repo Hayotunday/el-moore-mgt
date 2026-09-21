@@ -474,7 +474,7 @@ function SalesPageContent() {
                             <Eye className="h-3.5 w-3.5" /> Details
                           </Button>
                         </Link>
-                        {isInstallment && (
+                        {isInstallment && sale.balance > 0 && (
                           <Button
                             size="sm"
                             variant="outline"
