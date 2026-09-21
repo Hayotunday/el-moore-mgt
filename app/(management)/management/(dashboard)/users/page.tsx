@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { UserCog, Plus, UserX, Send, RotateCw, XCircle } from "lucide-react";
 import { toast } from "sonner";
 import PageHeader from "@/components/management/page-header";
@@ -35,7 +35,7 @@ import {
   DrawerBody,
   DrawerFooter,
 } from "@/components/ui/drawer";
-import { listUsers, assignUserRole, createUser, deactivateUser } from "@/lib/api/users";
+import { getUsersDashboard, assignUserRole, createUser, deactivateUser } from "@/lib/api/users";
 import { sendInvite, listMyInvites, resendInvite, revokeInvite } from "@/lib/api/invites";
 import type { Invite, ManagementUser } from "@/lib/api/types";
 import { MANAGEMENT_ROLES, ROLE_LABELS, type Role } from "@/lib/rbac";
@@ -66,6 +66,10 @@ export default function UsersPage() {
   const [roleFilter, setRoleFilter] = useState("all");
   const [deactivatingId, setDeactivatingId] = useState<string | null>(null);
 
+  const [totalUsers, setTotalUsers] = useState(0);
+  const [leadershipCount, setLeadershipCount] = useState(0);
+  const [rolesInUse, setRolesInUse] = useState(0);
+
   const [dialogOpen, setDialogOpen] = useState(false);
   const [saving, setSaving] = useState(false);
   const [form, setForm] = useState(EMPTY_FORM);
@@ -79,7 +83,14 @@ export default function UsersPage() {
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      setUsers(await listUsers());
+      const dashboard = await getUsersDashboard({
+        search: search.trim() || undefined,
+        role: roleFilter !== "all" ? (roleFilter as Role) : undefined,
+      });
+      setUsers(dashboard.users);
+      setTotalUsers(dashboard.summary.totalUsers);
+      setLeadershipCount(dashboard.summary.leadership);
+      setRolesInUse(dashboard.summary.rolesInUse);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load users.");
     } finally {
@@ -90,20 +101,14 @@ export default function UsersPage() {
     } catch {
       // MD/GM only — silently skip for other roles
     }
-  }, []);
+  }, [search, roleFilter]);
 
   useEffect(() => {
-    load();
+    const timer = setTimeout(() => {
+      load();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [load]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return users.filter((u) => {
-      if (roleFilter !== "all" && u.role !== roleFilter) return false;
-      if (q && !getFullName(u).toLowerCase().includes(q) && !u.email.toLowerCase().includes(q)) return false;
-      return true;
-    });
-  }, [users, search, roleFilter]);
 
   const handleRoleChange = async (userId: string, role: Role) => {
     try {
@@ -242,14 +247,14 @@ export default function UsersPage() {
       />
 
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
-        <StatCard label="Total Users" value={users.length} icon={<UserCog className="h-6 w-6" />} />
+        <StatCard label="Total Users" value={totalUsers} icon={<UserCog className="h-6 w-6" />} />
         <StatCard
           label="Leadership"
-          value={users.filter((u) => u.role === "MD" || u.role === "GM").length}
+          value={leadershipCount}
           variant="gold"
           icon={<UserCog className="h-6 w-6" />}
         />
-        <StatCard label="Roles In Use" value={MANAGEMENT_ROLES.length} icon={<UserCog className="h-6 w-6" />} />
+        <StatCard label="Roles In Use" value={rolesInUse} icon={<UserCog className="h-6 w-6" />} />
       </div>
 
       <SearchFilterBar
@@ -277,8 +282,8 @@ export default function UsersPage() {
           <DataTableHeadCell align="right">Actions</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={6} />}
-          {filtered.map((u, idx) => (
+          {!loading && users.length === 0 && <DataTableEmpty colSpan={6} />}
+          {users.map((u, idx) => (
             <DataTableRow key={u.id} index={idx}>
               <DataTableCell className="font-medium">{getFullName(u)}</DataTableCell>
               <DataTableCell>{u.email}</DataTableCell>
