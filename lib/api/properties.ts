@@ -5,10 +5,33 @@ import {
   toPublicR2Url,
   R2_PUBLIC_BASE_URL,
 } from "./client";
-import type { Property, PropertyImage, PropertyStatus, Sale } from "./types";
+import type { Property, PropertyImage, PropertyStatus, Sale, SaleType } from "./types";
 
 export interface PropertyWithSale extends Property {
   sale: Sale | null;
+}
+
+export interface DashboardProperty {
+  id: string;
+  title: string;
+  location: string;
+  price: number;
+  status: PropertyStatus;
+  firstName: string | null;
+  lastName: string | null;
+  saleType: SaleType | null;
+  saleDate: string | null;
+}
+
+export interface PropertiesDashboardSummary {
+  totalProperties: number;
+  sold: number;
+  totalPortfolioValue: number;
+}
+
+export interface PropertiesDashboardResponse {
+  summary: PropertiesDashboardSummary;
+  properties: DashboardProperty[];
 }
 
 /** GET /properties has no join on the live API — cross-reference sales client-side. */
@@ -28,24 +51,18 @@ export async function listProperties(
   return apiFetch<Property[]>(`/properties${toQueryString({ status })}`);
 }
 
-/**
- * Not wired to any page yet — the Properties page currently composes its stats and table
- * from `listProperties()` + `joinSaleToProperties()`, which already works. This
- * purpose-built endpoint could replace that, but its response shape isn't documented and
- * hasn't been verified against a live authenticated call.
- */
-export async function getPropertiesDashboard(params: {
+export async function getPropertiesDashboard(params?: {
   search?: string;
   status?: PropertyStatus;
   limit?: number;
   offset?: number;
-}): Promise<unknown> {
-  return apiFetch(
+}): Promise<PropertiesDashboardResponse> {
+  return apiFetch<PropertiesDashboardResponse>(
     `/properties/dashboard${toQueryString({
-      search: params.search,
-      status: params.status,
-      limit: params.limit ? String(params.limit) : undefined,
-      offset: params.offset ? String(params.offset) : undefined,
+      search: params?.search,
+      status: params?.status,
+      limit: params?.limit ? String(params.limit) : undefined,
+      offset: params?.offset ? String(params.offset) : undefined,
     })}`,
   );
 }

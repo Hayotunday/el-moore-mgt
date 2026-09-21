@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useState, useCallback } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Plus, Building2, Pencil, Trash2 } from "lucide-react";
 import { toast } from "sonner";
@@ -20,32 +20,41 @@ import {
 import { Button } from "@/components/ui/button";
 import PropertyFormDrawer from "@/components/management/property-form-drawer";
 import {
-  listProperties,
+  getPropertiesDashboard,
   deleteProperty,
-  joinSaleToProperties,
+  type DashboardProperty,
   type PropertyWithSale,
 } from "@/lib/api/properties";
-import { listSales } from "@/lib/api/sales";
+import type { PropertyStatus } from "@/lib/api/types";
 import { useConfirm } from "@/contexts/confirm-dialog-context";
 import { blurActiveElement, formatCurrency, formatDate } from "@/lib/utils";
 
 export default function PropertiesPage() {
   const [loading, setLoading] = useState(true);
-  const [properties, setProperties] = useState<PropertyWithSale[]>([]);
+  const [properties, setProperties] = useState<DashboardProperty[]>([]);
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [editingProperty, setEditingProperty] =
-    useState<PropertyWithSale | null>(null);
+    useState<DashboardProperty | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const confirm = useConfirm();
+
+  const [totalProperties, setTotalProperties] = useState(0);
+  const [soldCount, setSoldCount] = useState(0);
+  const [totalPortfolioValue, setTotalPortfolioValue] = useState(0);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const propertyList = await listProperties();
-      const saleList = await listSales().catch(() => []);
-      setProperties(joinSaleToProperties(propertyList, saleList));
+      const dashboard = await getPropertiesDashboard({
+        search: search.trim() || undefined,
+        status: statusFilter !== "all" ? (statusFilter as PropertyStatus) : undefined,
+      });
+      setProperties(dashboard.properties);
+      setTotalProperties(dashboard.summary.totalProperties);
+      setSoldCount(dashboard.summary.sold);
+      setTotalPortfolioValue(dashboard.summary.totalPortfolioValue);
     } catch (err) {
       toast.error(
         err instanceof Error ? err.message : "Could not load properties.",
@@ -53,29 +62,14 @@ export default function PropertiesPage() {
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [search, statusFilter]);
 
   useEffect(() => {
-    load();
+    const timer = setTimeout(() => {
+      load();
+    }, 300);
+    return () => clearTimeout(timer);
   }, [load]);
-
-  const filtered = useMemo(() => {
-    const q = search.trim().toLowerCase();
-    return properties.filter((p) => {
-      if (statusFilter !== "all" && p.status !== statusFilter) return false;
-      if (
-        q &&
-        !p.title.toLowerCase().includes(q) &&
-        !p.location.toLowerCase().includes(q)
-      ) {
-        return false;
-      }
-      return true;
-    });
-  }, [properties, search, statusFilter]);
-
-  const totalValue = properties.reduce((sum, p) => sum + Number(p.price), 0);
-  const soldCount = properties.filter((p) => p.status === "SOLD").length;
 
   const openNew = () => {
     blurActiveElement();
@@ -83,13 +77,24 @@ export default function PropertiesPage() {
     setDrawerOpen(true);
   };
 
-  const openEdit = (property: PropertyWithSale) => {
+  const openEdit = (property: DashboardProperty) => {
     blurActiveElement();
     setEditingProperty(property);
     setDrawerOpen(true);
   };
 
-  const handleDelete = async (property: PropertyWithSale) => {
+  const toPropertyWithSale = (p: DashboardProperty): PropertyWithSale => ({
+    id: p.id,
+    title: p.title,
+    location: p.location,
+    price: String(p.price),
+    status: p.status,
+    projectId: null,
+    createdAt: undefined,
+    sale: null,
+  });
+
+  const handleDelete = async (property: DashboardProperty) => {
     const ok = await confirm({
       title: `Delete "${property.title}"?`,
       description: "This removes the listing permanently and can't be undone.",
@@ -111,6 +116,13 @@ export default function PropertiesPage() {
     }
   };
 
+  const getBuyerName = (property: DashboardProperty) => {
+    if (property.firstName || property.lastName) {
+      return [property.firstName, property.lastName].filter(Boolean).join(" ");
+    }
+    return null;
+  };
+
   return (
     <div className="space-y-8">
       <PageHeader
@@ -126,7 +138,7 @@ export default function PropertiesPage() {
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
         <StatCard
           label="Total Properties"
-          value={properties.length}
+          value={totalProperties}
           icon={<Building2 className="h-6 w-6" />}
         />
         <StatCard
@@ -137,7 +149,7 @@ export default function PropertiesPage() {
         />
         <StatCard
           label="Total Portfolio Value"
-          value={formatCurrency(totalValue)}
+          value={formatCurrency(totalPortfolioValue)}
           icon={<Building2 className="h-6 w-6" />}
         />
       </div>
@@ -170,8 +182,8 @@ export default function PropertiesPage() {
           <DataTableHeadCell align="right">Actions</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && filtered.length === 0 && <DataTableEmpty colSpan={5} />}
-          {filtered.map((property, idx) => (
+          {!loading && properties.length === 0 && <DataTableEmpty colSpan={5} />}
+          {properties.map((property, idx) => (
             <DataTableRow key={property.id} index={idx}>
               <DataTableCell>
                 <Link
@@ -191,14 +203,14 @@ export default function PropertiesPage() {
                 <StatusBadge status={property.status} />
               </DataTableCell>
               <DataTableCell>
-                {property.sale ? (
+                {getBuyerName(property) ? (
                   <div>
-                    <p className="font-medium">{property.sale.buyerName}</p>
+                    <p className="font-medium">{getBuyerName(property)}</p>
                     <p className="text-xs text-muted-foreground">
-                      {property.sale.saleType === "OUTRIGHT"
+                      {property.saleType === "OUTRIGHT"
                         ? "Outright"
                         : "Installment"}{" "}
-                      · {formatDate(property.sale.createdAt)}
+                      · {property.saleDate ? formatDate(property.saleDate) : "—"}
                     </p>
                   </div>
                 ) : (
@@ -232,7 +244,7 @@ export default function PropertiesPage() {
       <PropertyFormDrawer
         open={drawerOpen}
         onOpenChange={setDrawerOpen}
-        editingProperty={editingProperty}
+        editingProperty={editingProperty ? toPropertyWithSale(editingProperty) : null}
         onSaved={load}
       />
     </div>
