@@ -564,14 +564,15 @@ function SalesPageContent() {
                             <Eye className="h-3.5 w-3.5" /> Details
                           </Button>
                         </Link>
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          disabled={voided || sale.balance <= 0}
-                          onClick={() => setPaymentSale(sale)}
-                        >
-                          Log Payment
-                        </Button>
+                        {!voided && sale.balance > 0 && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => setPaymentSale(sale)}
+                          >
+                            Log Payment
+                          </Button>
+                        )}
                         <Button
                           size="sm"
                           variant="ghost"
