@@ -181,6 +181,10 @@ function SalesPageContent() {
 
   const handleLogPayment = async () => {
     if (!paymentSale || !paymentAmount) return;
+    if (Number(paymentAmount) > paymentSale.balance) {
+      toast.error(`Payment exceeds remaining balance of ${formatCurrency(paymentSale.balance)}.`);
+      return;
+    }
     setSaving(true);
     try {
       await addInstallmentPayment(paymentSale.id, {
@@ -563,7 +567,7 @@ function SalesPageContent() {
                         <Button
                           size="sm"
                           variant="outline"
-                          disabled={voided}
+                          disabled={voided || sale.balance <= 0}
                           onClick={() => setPaymentSale(sale)}
                         >
                           Log Payment

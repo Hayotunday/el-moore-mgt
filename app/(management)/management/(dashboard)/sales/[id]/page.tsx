@@ -163,6 +163,10 @@ export default function SaleDetailPage({ params }: PageProps) {
       toast.error("Please enter a valid payment amount.");
       return;
     }
+    if (Number(amountPaid) > balance) {
+      toast.error(`Payment exceeds remaining balance of ${formatCurrency(balance)}.`);
+      return;
+    }
     setSavingPayment(true);
     try {
       await addInstallmentPayment(saleId, {
