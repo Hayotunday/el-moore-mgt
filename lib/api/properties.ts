@@ -109,6 +109,7 @@ export async function createProperty(input: {
   location: string;
   price: string;
   status?: PropertyStatus;
+  commissionRate?: number | null;
 }): Promise<Property> {
   return apiFetch<Property>("/properties", {
     method: "POST",
@@ -119,7 +120,7 @@ export async function createProperty(input: {
 /** OFFICE_ADMIN only. */
 export async function updateProperty(
   id: string,
-  input: Partial<Pick<Property, "title" | "location" | "price" | "status">>,
+  input: Partial<Pick<Property, "title" | "location" | "price" | "status" | "commissionRate">>,
 ): Promise<Property> {
   return apiFetch<Property>(`/properties/${id}`, {
     method: "PATCH",

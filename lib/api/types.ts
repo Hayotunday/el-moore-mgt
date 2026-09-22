@@ -50,6 +50,8 @@ export interface Property {
   location: string;
   price: string;
   status: PropertyStatus;
+  /** Commission rate percentage for referrals on this property (e.g., 5 for 5%) */
+  commissionRate?: number | null;
   /** Links this property to a construction Project (see lib/api/projects.ts) — not
    *  every property belongs to one, e.g. standalone land/resale units. */
   projectId?: string | null;

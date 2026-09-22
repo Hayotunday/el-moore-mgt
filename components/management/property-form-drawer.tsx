@@ -37,6 +37,7 @@ const EMPTY_FORM = {
   title: "",
   location: "",
   price: "",
+  commissionRate: "",
   status: "AVAILABLE" as PropertyStatus,
 };
 
@@ -70,6 +71,7 @@ export default function PropertyFormDrawer({
         title: editingProperty.title,
         location: editingProperty.location,
         price: editingProperty.price,
+        commissionRate: editingProperty.commissionRate != null ? String(editingProperty.commissionRate) : "",
         status: editingProperty.status,
       });
       setPropertyId(editingProperty.id);
@@ -105,10 +107,17 @@ export default function PropertyFormDrawer({
       toast.error("Title, location and price are required.");
       return;
     }
+    const payload = {
+      title: form.title,
+      location: form.location,
+      price: form.price,
+      status: form.status,
+      commissionRate: form.commissionRate !== "" ? Number(form.commissionRate) : undefined,
+    };
     setSaving(true);
     try {
       if (propertyId) {
-        await updateProperty(propertyId, form);
+        await updateProperty(propertyId, payload);
         toast.success("Property updated.");
         if (goToImages) {
           setStep("images");
@@ -118,7 +127,7 @@ export default function PropertyFormDrawer({
           onSaved();
         }
       } else {
-        const created = await createProperty(form);
+        const created = await createProperty(payload);
         toast.success("Property added to inventory.");
         setPropertyId(created.id);
         setStep("images");
@@ -263,6 +272,23 @@ export default function PropertyFormDrawer({
                     placeholder="220000000"
                   />
                 </div>
+              </div>
+              <div className="grid gap-2">
+                <Label>Commission Rate (%)</Label>
+                <Input
+                  type="number"
+                  min="0"
+                  max="100"
+                  step="0.01"
+                  value={form.commissionRate}
+                  onChange={(e) =>
+                    setForm((f) => ({ ...f, commissionRate: e.target.value }))
+                  }
+                  placeholder="5"
+                />
+                <span className="text-xs text-muted-foreground">
+                  Referral commission percentage for this property (e.g., 5 for 5%)
+                </span>
               </div>
             </DrawerBody>
             <DrawerFooter>
