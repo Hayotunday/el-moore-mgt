@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useCallback, useMemo } from "react";
+import { useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { Share2, Info, ArrowRight, Eye } from "lucide-react";
 import { toast } from "sonner";
@@ -17,28 +17,23 @@ import {
   DataTableEmpty,
 } from "@/components/management/data-table";
 import { Button } from "@/components/ui/button";
-import { listReferrals, markReferralPaid, type ReferralWithSale } from "@/lib/api/referrals";
-import { listUsers } from "@/lib/api/users";
-import type { ManagementUser } from "@/lib/api/types";
+import { getReferralsDashboard, markReferralPaid, type ReferralDashboardReferral, type ReferralDashboardResponse } from "@/lib/api/referrals";
 import { formatCurrency, formatDate, getFullName } from "@/lib/utils";
 import { useConfirm } from "@/contexts/confirm-dialog-context";
 
 export default function ReferralsPage() {
   const confirm = useConfirm();
   const [loading, setLoading] = useState(true);
-  const [referrals, setReferrals] = useState<ReferralWithSale[]>([]);
-  const [marketers, setMarketers] = useState<ManagementUser[]>([]);
+  const [referrals, setReferrals] = useState<ReferralDashboardReferral[]>([]);
+  const [summary, setSummary] = useState<ReferralDashboardResponse["summary"]>({});
   const [payingId, setPayingId] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
     try {
-      const [refsList, usersList] = await Promise.all([
-        listReferrals(),
-        listUsers("AFFILIATE_MARKETER").catch(() => [] as ManagementUser[]),
-      ]);
-      setReferrals(refsList);
-      setMarketers(usersList);
+      const dashboard = await getReferralsDashboard({ limit: 50 });
+      setReferrals(dashboard.referrals);
+      setSummary(dashboard.summary);
     } catch (err) {
       toast.error(err instanceof Error ? err.message : "Could not load referrals.");
     } finally {
@@ -50,13 +45,7 @@ export default function ReferralsPage() {
     load();
   }, [load]);
 
-  const marketerById = useMemo(() => {
-    const map = new Map<string, ManagementUser>();
-    marketers.forEach((m) => map.set(m.id, m));
-    return map;
-  }, [marketers]);
-
-  const handleMarkPaid = async (referral: ReferralWithSale) => {
+  const handleMarkPaid = async (referral: ReferralDashboardReferral) => {
     const ok = await confirm({
       title: "Mark Commission as Paid?",
       description: `This will record a payout of ${formatCurrency(referral.commissionAmount)} to the marketer. This action cannot be reversed.`,
@@ -75,12 +64,8 @@ export default function ReferralsPage() {
     }
   };
 
-  const pendingTotal = referrals
-    .filter((r) => r.status === "PENDING")
-    .reduce((sum, r) => sum + Number(r.commissionAmount), 0);
-  const paidTotal = referrals
-    .filter((r) => r.status === "PAID")
-    .reduce((sum, r) => sum + Number(r.commissionAmount), 0);
+  const pendingTotal = summary.PENDING?.total ?? 0;
+  const paidTotal = summary.PAID?.total ?? 0;
 
   return (
     <div className="space-y-8">
@@ -132,11 +117,8 @@ export default function ReferralsPage() {
         <DataTableBody>
           {!loading && referrals.length === 0 && <DataTableEmpty colSpan={6} />}
           {referrals.map((referral, idx) => {
-            const marketer = marketerById.get(referral.marketerId);
-            const displayMarketer = marketer
-              ? `${getFullName(marketer)} (${marketer.email})`
-              : referral.marketerId;
-
+            const marketer = referral.marketer;
+            const sale = referral.sale;
             return (
               <DataTableRow key={referral.id} index={idx}>
                 <DataTableCell className="font-medium">
@@ -149,8 +131,8 @@ export default function ReferralsPage() {
                     <span className="font-mono text-xs">{referral.marketerId}</span>
                   )}
                 </DataTableCell>
-                <DataTableCell>{referral.buyerName}</DataTableCell>
-                <DataTableCell align="right">{formatCurrency(referral.saleAmount)}</DataTableCell>
+                <DataTableCell>{sale?.propertyName ?? "Unknown property"}</DataTableCell>
+                <DataTableCell align="right">{formatCurrency(sale?.totalAmount ?? 0)}</DataTableCell>
                 <DataTableCell align="right" className="font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(referral.commissionAmount)}
                 </DataTableCell>
