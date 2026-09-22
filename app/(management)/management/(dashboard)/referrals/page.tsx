@@ -108,14 +108,15 @@ export default function ReferralsPage() {
       <DataTable>
         <DataTableHead>
           <DataTableHeadCell>Marketer</DataTableHeadCell>
-          <DataTableHeadCell>Buyer</DataTableHeadCell>
+          <DataTableHeadCell>Property</DataTableHeadCell>
           <DataTableHeadCell align="right">Sale Amount</DataTableHeadCell>
+          <DataTableHeadCell align="right">Rate</DataTableHeadCell>
           <DataTableHeadCell align="right">Commission</DataTableHeadCell>
           <DataTableHeadCell align="center">Status</DataTableHeadCell>
           <DataTableHeadCell align="center">Action</DataTableHeadCell>
         </DataTableHead>
         <DataTableBody>
-          {!loading && referrals.length === 0 && <DataTableEmpty colSpan={6} />}
+          {!loading && referrals.length === 0 && <DataTableEmpty colSpan={7} />}
           {referrals.map((referral, idx) => {
             const marketer = referral.marketer;
             const sale = referral.sale;
@@ -133,6 +134,9 @@ export default function ReferralsPage() {
                 </DataTableCell>
                 <DataTableCell>{sale?.propertyName ?? "Unknown property"}</DataTableCell>
                 <DataTableCell align="right">{formatCurrency(sale?.totalAmount ?? 0)}</DataTableCell>
+                <DataTableCell align="right" className="text-xs text-muted-foreground">
+                  {sale?.commissionRate != null ? `${sale.commissionRate}%` : "—"}
+                </DataTableCell>
                 <DataTableCell align="right" className="font-bold text-emerald-600 dark:text-emerald-400">
                   {formatCurrency(referral.commissionAmount)}
                 </DataTableCell>

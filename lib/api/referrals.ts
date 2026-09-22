@@ -16,7 +16,6 @@ export interface ReferralDashboardReferral {
     firstName: string;
     lastName: string;
     email: string;
-    commissionRate: number | null;
   } | null;
   saleId: string;
   sale: {
@@ -26,6 +25,7 @@ export interface ReferralDashboardReferral {
     totalAmount: number;
     saleType: string;
     status: string;
+    commissionRate: number | null;
   } | null;
   commissionAmount: number;
   status: string;
