@@ -20,6 +20,7 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
+import TiptapEditor from "@/components/management/tiptap-editor";
 import { Switch } from "@/components/ui/switch";
 import {
   Drawer,
@@ -101,7 +102,9 @@ export default function BlogPage() {
   };
 
   const handleSave = async () => {
-    if (!form.title || !form.content) {
+    const text = form.content.replace(/<[^>]+>/g, "").trim();
+    const hasImage = /<img\b[^>]*\bsrc\s*=/i.test(form.content);
+    if (!form.title.trim() || (!text && !hasImage)) {
       toast.error("Title and content are required.");
       return;
     }
@@ -111,7 +114,6 @@ export default function BlogPage() {
       if (editingId) {
         await updatePost(editingId, {
           title: form.title,
-          slug: form.slug,
           content: form.content,
         });
         await setPostPublished(editingId, form.published);
@@ -286,6 +288,7 @@ export default function BlogPage() {
               </Label>
               <Input
                 value={form.slug}
+                disabled={editingId !== null}
                 onChange={(e) =>
                   setForm((f) => ({ ...f, slug: e.target.value }))
                 }
@@ -294,12 +297,10 @@ export default function BlogPage() {
             </div>
             <div className="grid gap-2">
               <Label>Content</Label>
-              <Textarea
-                rows={6}
+              <TiptapEditor
                 value={form.content}
-                onChange={(e) =>
-                  setForm((f) => ({ ...f, content: e.target.value }))
-                }
+                onChange={(html) => setForm((f) => ({ ...f, content: html }))}
+                postId={editingId}
               />
             </div>
             <div className="grid gap-2">

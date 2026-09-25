@@ -40,7 +40,7 @@ export async function createPost(input: {
 /** OFFICE_ADMIN only. */
 export async function updatePost(
   id: string,
-  input: Partial<Pick<BlogPost, "title" | "content">> & { slug?: string },
+  input: Partial<Pick<BlogPost, "title" | "content">>,
 ): Promise<BlogPost> {
   return apiFetch<BlogPost>(`/blog/posts/${id}`, { method: "PATCH", body: JSON.stringify(input) });
 }
